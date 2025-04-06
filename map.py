@@ -4,8 +4,21 @@ from shapely.geometry import Point, Polygon
 import heapq
 import random
 
-from person import personWalking
 from utils import heuristic, a_star
+
+# def FindReRoute(frame, route, lastPosition, walkable_points, ReRoutePlot, Position)
+
+
+def FindReRoute(route, Position, walkable_points):
+    goal = min(route, key=lambda p: (heuristic(Position, p)))
+    ReRoute = a_star(Position, goal, walkable_points, 0.5)
+    # print("ReRouting")
+    # if route:
+    #    rx, ry = zip(*ReRoute)
+    #    ReRoutePlot.set_data(rx, ry)
+    #
+    # lastPosition.set_data(Position[0], Position[1])
+    return ReRoute
 
 
 def initRoute():
@@ -56,7 +69,7 @@ def initRoute():
     route = find_full_route(entrance, products, destination,
                             walkable_points, grid_size)
 
-    return route
+    return route, walkable_points
 
     fig, ax = plt.subplots(figsize=(6, 6))
 
