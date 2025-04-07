@@ -5,6 +5,30 @@ import heapq
 import random
 
 from utils import heuristic, a_star
+from dataBase import addSectionToDataBase, getSectionsFromDataBase, createDataBase
+
+
+def InitMap():
+    sectionsLines = {
+        "Produce": Polygon([(2, 8.1), (4, 8.1), (4, 7.9), (2, 7.9)]),
+        "Dairy": Polygon([(6, 8.1), (8, 8.1), (8, 7.9), (6, 7.9)]),
+        "Bakery": Polygon([(2, 6.1), (4, 6.1), (4, 5.9), (2, 5.9)]),
+        "Frozen Foods": Polygon([(6, 6.1), (8, 6.1), (8, 5.9), (6, 5.9)]),
+        "Snacks": Polygon([(2, 4.1), (4, 4.1), (4, 3.9), (2, 3.9)]),
+    }
+
+    products = [
+        (5, 7.5), (6.5, 7.5), (2.5, 5.5), (6.5, 5.5), (2.5, 3.5),
+        (5.5, 5.5), (4.5, 5.5), (2.5, 2.5), (1.5, 2.5), (2.5, 7.5),
+        (1, 9.5), (1.5, 1.5), (0.5, 0.5), (3.5, 6.5), (7.5, 6.5),
+        (5.0, 4.0), (7.0, 2.5), (6.0, 3.5), (1.0, 5.0), (8.0, 1.0)
+    ]
+    createDataBase()
+    for i in range(len(products)):
+        addSectionToDataBase(random.choice(
+            list(sectionsLines.keys())), products[i][0],  products[i][1]),
+
+    return sectionsLines
 
 # def FindReRoute(frame, route, lastPosition, walkable_points, ReRoutePlot, Position)
 
@@ -21,22 +45,13 @@ def FindReRoute(route, Position, walkable_points):
     return ReRoute
 
 
-def initRoute():
-    sections = {
-        "Produce": Polygon([(2, 8.1), (4, 8.1), (4, 7.9), (2, 7.9)]),
-        "Dairy": Polygon([(6, 8.1), (8, 8.1), (8, 7.9), (6, 7.9)]),
-        "Bakery": Polygon([(2, 6.1), (4, 6.1), (4, 5.9), (2, 5.9)]),
-        "Frozen Foods": Polygon([(6, 6.1), (8, 6.1), (8, 5.9), (6, 5.9)]),
-        "Snacks": Polygon([(2, 4.1), (4, 4.1), (4, 3.9), (2, 3.9)]),
-    }
+def initRoute(sectionsLines):
 
     entrance = (5, 9.0)
-    products = [
-        (5, 7.5), (6.5, 7.5), (2.5, 5.5), (6.5, 5.5), (2.5, 3.5),
-        (5.5, 5.5), (4.5, 5.5), (2.5, 2.5), (1.5, 2.5), (2.5, 7.5),
-        (1, 9.5), (1.5, 1.5), (0.5, 0.5), (3.5, 6.5), (7.5, 6.5),
-        (5.0, 4.0), (7.0, 2.5), (6.0, 3.5), (1.0, 5.0), (8.0, 1.0)
-    ]
+    allsections = getSectionsFromDataBase()
+    products = [(x, y) for _, _, x, y in allsections]
+
+    print(allsections)
 
     grid_size = 0.5
 
@@ -56,7 +71,7 @@ def initRoute():
 
     def can_walk(x, y):
         point = Point(x, y)
-        return not any(section.contains(point) for section in sections.values())
+        return not any(section.contains(point) for section in sectionsLines.values())
 
     def generate_grid():
         return {(round(x * grid_size, 1), round(y * grid_size, 1))
@@ -71,10 +86,12 @@ def initRoute():
 
     return route, walkable_points
 
+
+def PlotMap(sectionsLines, products, entrance, route, walkable_points):
     fig, ax = plt.subplots(figsize=(6, 6))
 
     ax.clear()
-    for polygon in sections.values():
+    for polygon in sectionsLines.values():
         x, y = polygon.exterior.xy
         ax.fill(x, y, alpha=0.4)
 
@@ -94,5 +111,5 @@ def initRoute():
     lastPosition, = ax.plot([], [], 'ro', markersize=10)
     ReRoutePlot, = ax.plot([], [], '*', linewidth=2, label='ReRoute')
 
-    ani = animation.FuncAnimation(fig, personWalking, frames=len(route),
+    ani = animation.FuncAnimation(fig, frames=len(route),
                                   fargs=(route, lastPosition, walkable_points, ReRoutePlot), interval=1000)
