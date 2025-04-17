@@ -10,7 +10,8 @@ def createDataBase():
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL,
         x INTEGER NOT NULL,
-        y INTEGER NOT NULL
+        y INTEGER NOT NULL,
+        UNIQUE(name) ON CONFLICT IGNORE
     )
     ''')
 

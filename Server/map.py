@@ -1,5 +1,4 @@
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+
 from shapely.geometry import Point, Polygon
 import heapq
 import random
@@ -18,15 +17,18 @@ def InitMap():
     }
 
     products = [
-        (5, 7.5), (6.5, 7.5), (2.5, 5.5), (6.5, 5.5), (2.5, 3.5),
-        (5.5, 5.5), (4.5, 5.5), (2.5, 2.5), (1.5, 2.5), (2.5, 7.5),
-        (1, 9.5), (1.5, 1.5), (0.5, 0.5), (3.5, 6.5), (7.5, 6.5),
-        (5.0, 4.0), (7.0, 2.5), (6.0, 3.5), (1.0, 5.0), (8.0, 1.0)
+        ("der", 5, 7.5), ("fer", 6.5, 7.5), ("ilo", 2.5,
+                                             5.5), ("wfe", 6.5, 5.5), ("pol", 2.5, 3.5),
+        ("oiu", 5.5, 5.5), ("pkl ", 4.5, 5.5), ("ref",
+                                                2.5, 2.5), ("ter", 1.5, 2.5), ("kji", 2.5, 7.5),
+        ("hji", 1, 9.5), ("ghh", 1.5, 1.5), ("fcv", 0.5,
+                                             0.5), ("vbn", 3.5, 6.5), ("vpn", 7.5, 6.5),
+        ("das", 5.0, 4.0), ("fds", 7.0, 2.5), ("ctrl",
+                                               6.0, 3.5), ("jyt", 1.0, 5.0), ("ultimo", 8.0, 1.0)
     ]
     createDataBase()
     for i in range(len(products)):
-        addSectionToDataBase(random.choice(
-            list(sectionsLines.keys())), products[i][0],  products[i][1]),
+        addSectionToDataBase(products[i][0],  products[i][1], products[i][2]),
 
     return sectionsLines
 
@@ -85,31 +87,3 @@ def initRoute(sectionsLines):
                             walkable_points, grid_size)
 
     return route, walkable_points
-
-
-def PlotMap(sectionsLines, products, entrance, route, walkable_points):
-    fig, ax = plt.subplots(figsize=(6, 6))
-
-    ax.clear()
-    for polygon in sectionsLines.values():
-        x, y = polygon.exterior.xy
-        ax.fill(x, y, alpha=0.4)
-
-    for px, py in products:
-        ax.plot(px, py, 'bs', markersize=5)
-
-    ax.plot(entrance[0], entrance[1], 'g^', markersize=10, label='Entrance')
-    if route:
-        rx, ry = zip(*route)
-        ax.plot(rx, ry, 'c--', linewidth=2, label='Best Route')
-    ax.set_xlim(0, 10)
-    ax.set_ylim(0, 10)
-    ax.legend()
-    ax.set_title("Optimized Shopping Route")
-    ax.plot()
-
-    lastPosition, = ax.plot([], [], 'ro', markersize=10)
-    ReRoutePlot, = ax.plot([], [], '*', linewidth=2, label='ReRoute')
-
-    ani = animation.FuncAnimation(fig, frames=len(route),
-                                  fargs=(route, lastPosition, walkable_points, ReRoutePlot), interval=1000)

@@ -1,13 +1,17 @@
 <template>
     <div class="view">
         <button @click="GetRoute">ROUTE</button>
-        <button @click="MovePerson('Y', 1)">W</button>
+        <button @click="MovePerson('Y', 0.5)">W</button>
         <div>
-            <button @click="MovePerson('X', -1)">A</button>
-            <button @click="MovePerson('Y', -1)">S</button>
-            <button @click="MovePerson('X', 1)">D</button>
+            <button @click="MovePerson('X', -0.5)">A</button>
+            <button @click="MovePerson('Y', -0.5)">S</button>
+            <button @click="MovePerson('X', 0.5)">D</button>
+
         </div>
         {{ coordX }}:{{ coordY }}
+
+        <p2>Compass Heading: {{ heading }}°</p2>
+
         <div class="routes">
             <div v-if="route">
                 <h2>Route:</h2>
@@ -26,20 +30,21 @@
                 </ul>
             </div>
             <div v-else>In Route</div>
+            <div>
+                <button @click="GetSections">Get sections</button>
+                <div v-if="sectionsPoints">
+                    <h2>Sections:</h2>
+                    <ul>
+                        <li v-for="(point, index) in sectionsPoints" :key="index">
+                            {{ point[1] }}:{{ point[2] }} : {{ point[3] }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-        </div>
     </div>
-    <div>
-        <button @click="GetSections">Get sections</button>
-        <div v-if="sectionsPoints">
-            <h2>Sections:</h2>
-            <ul>
-                <li v-for="(point, index) in sectionsPoints" :key="index">
-                    {{ point[1] }}:{{ point[2] }} : {{ point[3] }}
-                </li>
-            </ul>
-        </div>
-    </div>
+
 </template>
 <script>
 import axios from 'axios';
@@ -51,6 +56,7 @@ export default {
             coordY: 0,
             rRoute: null,
             sectionsPoints: null,
+            heading: 0,
         }
     },
     methods: {
@@ -74,15 +80,15 @@ export default {
         },
         MovePerson(coord, direction) {
             if (coord === 'X') {
-                if (this.coordX === 0 && direction === -1)
+                if (this.coordX === 0 && direction === -0.5)
                     return
-                if (this.coordX === 10 && direction === 1)
+                if (this.coordX === 10 && direction === 0.5)
                     return
                 this.coordX += direction;
             } else if (coord === 'Y') {
-                if (this.coordY === 0 && direction === -1)
+                if (this.coordY === 0 && direction === -0.5)
                     return
-                if (this.coordY === 10 && direction === 1)
+                if (this.coordY === 10 && direction === 0.5)
                     return
                 this.coordY += direction;
             }
@@ -113,8 +119,38 @@ export default {
 
         },
 
+        handleOrientation(event) {
+            if (event.absolute || event.webkitCompassHeading !== undefined) {
+                const alpha = event.webkitCompassHeading || event.alpha;
+                this.heading = 360 - alpha; // Reverse to match compass rotation
+            }
+        },
+
 
     },
+    mounted() {
+        // iOS requires user interaction before allowing access
+        if (
+            typeof DeviceOrientationEvent !== "undefined" &&
+            typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+            DeviceOrientationEvent.requestPermission()
+                .then((response) => {
+                    if (response === "granted") {
+                        window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
+                    }
+                })
+                .catch(console.error);
+        } else {
+            // For Android or older devices
+            window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
+        }
+    },
+
+    beforeUnmount() {
+        window.removeEventListener("deviceorientationabsolute", this.handleOrientation);
+    },
+
 };  
 </script>
 
