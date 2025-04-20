@@ -13,7 +13,8 @@ CORS(app)  # Allow all origins
 walkingPoints = []
 route = []
 sectionsLines = {}
-sectionsPoints = {}
+sectionsPoints = []
+shoppingList = []
 
 
 def run_on_start():
@@ -26,11 +27,17 @@ def index():
     return jsonify(map)
 
 
-@app.route("/route")
+@app.route("/route", methods=['POST'])
 def getRoute():
-    global route, walkingPoints
-    route, walkingPoints = initRoute(sectionsLines)
-    return jsonify(route)
+    try:
+        global route, walkingPoints
+        coord = request.get_json()
+        print("Received Coordinates:", coord)
+        route, walkingPoints = initRoute(sectionsLines, shoppingList, coord)
+        return jsonify({"route": route, "shoppingList": shoppingList})
+    except Exception as e:
+        print("Error in /route:", e)
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/reRoute", methods=['POST'])
@@ -52,6 +59,18 @@ def getSectionsPoints():
     global sectionsPoints
     sectionsPoints = getSectionsFromDataBase()
     return jsonify(sectionsPoints)
+
+
+@app.route("/list", methods=['POST'])
+def SaveShoppingList():
+    global shoppingList
+    try:
+        shoppingList = request.get_json()
+        print("Received Shopping List:", shoppingList)  # Debug
+        return jsonify({"message": "Shopping list saved successfully!"})
+    except Exception as e:
+        print("Error in /list:", e)
+        return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
