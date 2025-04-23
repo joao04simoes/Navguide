@@ -33,8 +33,9 @@ def getRoute():
         global route, walkingPoints
         coord = request.get_json()
         print("Received Coordinates:", coord)
-        route, walkingPoints = initRoute(sectionsLines, shoppingList, coord)
-        return jsonify({"route": route, "shoppingList": shoppingList})
+        route, walkingPoints, stops = initRoute(
+            sectionsLines, shoppingList, coord)
+        return jsonify({"route": route, "shoppingList": shoppingList, "Stops": stops})
     except Exception as e:
         print("Error in /route:", e)
         return jsonify({"error": str(e)}), 500
@@ -47,7 +48,14 @@ def ReRoute():
         PositionJson = request.get_json()
         print("Received Position:", PositionJson)  # Debug
         Position = (PositionJson["x"], PositionJson["y"])
-        Rroute = FindReRoute(route, Position, walkingPoints)
+        if "Ns" in PositionJson:
+            NextStop = PositionJson["Ns"]
+        else:
+            NextStop = route[-1]
+        print("Next Stop:", NextStop)  # Debug
+        print("Current Position:", Position)  # Debug
+        print("Walking Points:", walkingPoints)  # Debug
+        Rroute = FindReRoute(NextStop, Position, walkingPoints)
         return jsonify(Rroute)
     except Exception as e:
         print("Error in /reRoute:", e)

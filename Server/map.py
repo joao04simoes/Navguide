@@ -35,10 +35,9 @@ def InitMap():
 # def FindReRoute(frame, route, lastPosition, walkable_points, ReRoutePlot, Position)
 
 
-def FindReRoute(route, Position, walkable_points):
-    goal = min(route, key=lambda p: (heuristic(Position, p)))
+def FindReRoute(goal, Position, walkable_points):
     ReRoute = a_star(Position, goal, walkable_points, 0.5)
-    del ReRoute[0]
+    print("ReRoute", ReRoute)
     return ReRoute
 
 
@@ -53,17 +52,18 @@ def initRoute(sectionsLines, shoppingList, coord):
     def find_full_route(start, product_locations, destination, walkable_points, grid_size):
         route = [start]
         remaining_stops = product_locations[:]
+        stops = []
 
         while remaining_stops:
             next_stop = min(remaining_stops, key=lambda p: (
                 abs(heuristic(route[-1], p) / (heuristic(p, destination)))))
+            stops.append(next_stop)
             route += a_star(route[-1], next_stop,
                             walkable_points, grid_size)[1:]
             remaining_stops.remove(next_stop)
 
         route += a_star(route[-1], destination, walkable_points, grid_size)[1:]
-        del route[0]
-        return route
+        return route, stops
 
     def can_walk(x, y):
         point = Point(x, y)
@@ -77,7 +77,7 @@ def initRoute(sectionsLines, shoppingList, coord):
     walkable_points = generate_grid()
     destination = (2.0, 3.0)
 
-    route = find_full_route(entrance, products, destination,
-                            walkable_points, grid_size)
+    route, stops = find_full_route(entrance, products, destination,
+                                   walkable_points, grid_size)
 
-    return route, walkable_points
+    return route, walkable_points, stops

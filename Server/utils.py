@@ -7,6 +7,8 @@ def heuristic(a, b):
 
 def a_star(start, goal, walkable_points, grid_size):
 
+    goal = (goal[0], goal[1])
+    print("goal", goal)
     open_set = []
     heapq.heappush(open_set, (0, start))
     came_from = {}
