@@ -11,17 +11,22 @@ export function NextHeading(atualPosition, NextPosition) {
     return NextHeading
 }
 
-export function GiveDirection(atualHeading, NextHeading) {
+export function GiveDirection(atualHeading, NextHeading, lastDirection) {
     const diff = atualHeading - NextHeading
+    let direction = ""
     if (atualHeading === NextHeading)
-        return "forward"
+        direction = "seguir em frente"
     else if (Math.abs(diff) === 2)
-        return "backward"
+        direction = "virar para trás"
     else if (diff === 1 || diff === -3)
-        return "left"
+        direction = "virar para a esquerda"
     else if (diff === -1 || diff === 3)
-        return "right"
+        direction = "virar para a direita"
     else
         return "error"
+    if (lastDirection === direction)
+        return [direction, 0]
+    else
+        return [direction, 1]
 
 }

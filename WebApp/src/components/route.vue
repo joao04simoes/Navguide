@@ -2,11 +2,8 @@
         <div class="controller">
             <div class="actions">
                 <button @click="GetRoute">🧭 Route</button>
-                <div class="movement-grid">
-                    <div class="arrow-up"><button @click="MovePerson('Y', 0.5)">⬆️</button></div>
-                    <div class="arrow-left"><button @click="MovePerson('X', -0.5)">⬅️</button></div>
-                    <div class="arrow-down"><button @click="MovePerson('Y', -0.5)">⬇️</button></div>
-                    <div class="arrow-right"><button @click="MovePerson('X', 0.5)">➡️</button></div>
+                <div>
+                    <div class="arrow-up"><button @click="MovePerson(0.5)">⬆Move</button></div>
                 </div>
                 <div class="heading">
                     <span>Heading:</span>
@@ -22,10 +19,11 @@
                 <p>🧭 Compass Heading: {{ heading }}°</p>
                 <button @click="getDirections">🧭 Get Directions</button>
                 <p v-if="direction">➡️ {{ direction }}</p>
+                <p v-if="stop"> parar</p>
             </div>
 
             <div class="routes">
-                <div v-if="route?.length">
+                <div v-if="route?.length && !rRoute">
                     <h3>📌 Route:</h3>
                     <ul>
                         <li v-for="(point, index) in route" :key="index">
@@ -33,10 +31,7 @@
                         </li>
                     </ul>
                 </div>
-                <div v-else>
-                    <p>🕐 Awaiting route info...</p>
-                </div>
-                <div v-if="rRoute?.length">
+                <div v-else-if="rRoute?.length">
                     <h3>🔄 Re-Route:</h3>
                     <ul>
                         <li v-for="(point, index) in rRoute" :key="index">
@@ -44,6 +39,10 @@
                         </li>
                     </ul>
                 </div>
+                <div v-else>
+                    <p>🕐 Awaiting route info...</p>
+                </div>
+
 
             </div>
         </div>
@@ -68,6 +67,8 @@ export default {
             direction: null,
             shoppingList: [],
             Stops: [],
+            stop: false,
+
 
         }
     },
@@ -90,29 +91,46 @@ export default {
 
         getDirections() {
             let NextHeadingValue;
+            let repeat = 0;
             if (this.rRoute) {
                 NextHeadingValue = NextHeading([this.coordX, this.coordY], this.rRoute[1]);
             } else {
-                NextHeadingValue = NextHeading([this.coordX, this.coordY], this.route[0]);
+                NextHeadingValue = NextHeading([this.coordX, this.coordY], this.route[1]);
             }
-            console.log(NextHeadingValue);
-            this.direction = GiveDirection(this.heading, NextHeadingValue);
+            [this.direction, repeat] = GiveDirection(this.heading, NextHeadingValue, this.direction);
+            console.log(this.direction, repeat);
+            if (repeat === 1) {
+                this.speak(this.direction);
+            } else {
+                this.speak("Continue");
+            }
+        },
+
+        speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'pt-PT'; // or 'pt-PT' for Portuguese
+            speechSynthesis.speak(utterance);
         },
 
 
-        MovePerson(coord, direction) {
-            if (coord === 'X') {
-                if (this.coordX === 0 && direction === -0.5)
+        MovePerson(direction) {
+
+            if (this.heading === 2 || this.heading === 4) {
+
+                if (this.coordX === 0 || this.coordX === 10)
                     return
-                if (this.coordX === 10 && direction === 0.5)
+                if (this.heading === 2)
+                    this.coordX += direction;
+                if (this.heading === 4)
+                    this.coordX -= direction;
+            } else if (this.heading === 1 || this.heading === 3) {
+
+                if (this.coordY === 0 || this.coordY === 10)
                     return
-                this.coordX += direction;
-            } else if (coord === 'Y') {
-                if (this.coordY === 0 && direction === -0.5)
-                    return
-                if (this.coordY === 10 && direction === 0.5)
-                    return
-                this.coordY += direction;
+                if (this.heading === 3)
+                    this.coordY -= direction;
+                if (this.heading === 1)
+                    this.coordY += direction;
             }
             this.IsInRoute();
         },
@@ -136,16 +154,16 @@ export default {
             if (this.route) {
                 for (let i = 0; i < this.route.length; i++) {
                     if (this.route[i][0] === this.coordX && this.route[i][1] === this.coordY) {
-                        console.log("In route");
+
                         this.route = this.route.slice(i);
                         this.rRoute = null;
                         return { success: true, index: i };
                     } else if (this.rRoute) {
                         for (let i = 0; i < this.rRoute.length; i++) {
-                            console.log(i)
+
                             if (this.rRoute[i][0] === this.coordX && this.rRoute[i][1] === this.coordY) {
-                                console.log("In Rroute");
-                                this.rRoute.splice(i, 1);
+
+                                this.rRoute.slice(i)
                                 if (this.rRoute.length === 0) {
                                     this.rRoute = null;
                                 }
@@ -201,7 +219,9 @@ export default {
                 if (this.IstheStop()) {
                     this.Stops.splice(0, 1);
                     this.route = this.route.slice(result.index);
+                    this.stop = true
                 }
+                this.getDirections()
             }
         }
 
@@ -228,7 +248,7 @@ export default {
         this.GetRoute();
         intervalId = setInterval(() => {
             this.MainFunc()
-        }, 1000)
+        }, 5000)
 
     },
 
