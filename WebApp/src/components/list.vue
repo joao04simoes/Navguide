@@ -1,6 +1,6 @@
 <template>
     <div>
-        <button @click="GetSections">Get sections</button>
+        <button @click="GetSections">Getsections</button>
         <button @click="makeShoppingList">make list</button>
         <div v-if="sectionsPoints">
             <h2>Sections:</h2>
