@@ -1,4 +1,8 @@
 <template>
+
+    <div @touchstart="startTouch" @touchend="endTouch">
+    <!-- resto do conteúdo -->
+    </div>
     <div>
         <button @click="GetSections">Get sections</button>
         <button @click="makeShoppingList">make list</button>
@@ -45,6 +49,7 @@ import { useRoute } from 'vue-router'
 export default {
     data() {
         return {
+            startX: 0,
             sectionsPoints: null,
             shoppingListIds: [],
             shoppingList: null,
@@ -78,6 +83,18 @@ export default {
                 this.sectionsPoints = response.data;
             } catch (error) {
                 console.error(error);
+            }
+        },
+
+        startTouch(event) {
+            this.startX = event.changedTouches[0].screenX
+        },
+        endTouch(event) {
+            const endX = event.changedTouches[0].screenX
+            const diffX = this.startX - endX
+
+            if (diffX < -50) {
+                this.$router.push('/home')
             }
         },
 
