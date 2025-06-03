@@ -20,6 +20,8 @@ sectionsLines = {}
 sectionsPoints = []
 shoppingList = []
 
+#feliz
+
 
 # Dicionário para guardar as distâncias por mac_address
 distances = {
