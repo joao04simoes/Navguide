@@ -83,4 +83,4 @@ def SaveShoppingList():
 
 if __name__ == "__main__":
     run_on_start()
-    app.run(debug=True)
+    app.run(host= '0.0.0.0', port=5000 ,debug=True)
