@@ -1,4 +1,10 @@
 <template>
+
+    <div @touchstart="startTouch" @touchend="endTouch">
+    <!-- resto do conteúdo -->
+    </div>
+    <button @click="startVoiceRecognition">Selecionar por voz</button>
+    <p v-if="voiceResult">Último comando: "{{ voiceResult }}"</p>
     <div>
         <button @click="GetSections">Getsections</button>
         <button @click="makeShoppingList">make list</button>
@@ -45,10 +51,14 @@ import { useRoute } from 'vue-router'
 export default {
     data() {
         return {
+            startX: 0,
             sectionsPoints: null,
             shoppingListIds: [],
             shoppingList: null,
             searchQuery: '',
+            voiceResult: '',
+            recognition: null,
+
         }
     },
 
@@ -64,6 +74,47 @@ export default {
     },
 
     methods: {
+
+        startVoiceRecognition() {
+            // Verifica se o navegador suporta a Web Speech API
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Reconhecimento de voz não suportado neste navegador.');
+                return;
+            }
+
+            this.recognition = new SpeechRecognition();
+            this.recognition.lang = 'pt-BR'; // ou 'en-US', conforme sua aplicação
+            this.recognition.interimResults = false;
+            this.recognition.maxAlternatives = 1;
+
+            this.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.trim();
+                this.voiceResult = transcript;
+                this.selectItemByVoice(transcript);
+            };
+
+            this.recognition.onerror = (event) => {
+                console.error('Erro no reconhecimento de voz:', event.error);
+            };
+
+            this.recognition.start();
+        },
+
+        selectItemByVoice(transcript) {
+            if (!this.sectionsPoints) return;
+
+            const match = this.sectionsPoints.find(point => {
+                const name = point[1].toLowerCase();
+                return name.includes(transcript.toLowerCase());
+            });
+
+            if (match && !this.shoppingListIds.includes(match[0])) {
+                this.shoppingListIds.push(match[0]);
+            }
+        },
+
+
         async postList() {
             try {
                 const response = await axios.post('http://127.0.0.1:5000/list', this.shoppingList)
@@ -78,6 +129,18 @@ export default {
                 this.sectionsPoints = response.data;
             } catch (error) {
                 console.error(error);
+            }
+        },
+
+        startTouch(event) {
+            this.startX = event.changedTouches[0].screenX
+        },
+        endTouch(event) {
+            const endX = event.changedTouches[0].screenX
+            const diffX = this.startX - endX
+
+            if (diffX < -50) {
+                this.$router.push('/home')
             }
         },
 
