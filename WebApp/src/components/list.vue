@@ -84,7 +84,7 @@ export default {
             }
 
             this.recognition = new SpeechRecognition();
-            this.recognition.lang = 'pt-BR'; // ou 'en-US', conforme sua aplicação
+            this.recognition.lang = 'pt-PT'; // ou 'en-US', conforme sua aplicação
             this.recognition.interimResults = false;
             this.recognition.maxAlternatives = 1;
 
@@ -111,10 +111,24 @@ export default {
 
             if (match && !this.shoppingListIds.includes(match[0])) {
                 this.shoppingListIds.push(match[0]);
+            // ✅ Fala feedback ao utilizador
+            const mensagem = new SpeechSynthesisUtterance(`Adicionado: ${match[1]}`);
+            mensagem.lang = 'pt-PT';
+            const vozes = window.speechSynthesis.getVoices();
+            const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
+            mensagem.voice = vozPT;
+            window.speechSynthesis.speak(mensagem);
+
+            } else {
+            // ✅ Feedback se nada for encontrado
+            const mensagem = new SpeechSynthesisUtterance(`Item não encontrado`);
+            mensagem.lang = 'pt-PT';
+            window.speechSynthesis.speak(mensagem);
+
             }
         },
 
-
+        
         async postList() {
             try {
                 const response = await axios.post('http://127.0.0.1:5000/list', this.shoppingList)
