@@ -104,34 +104,44 @@ export default {
         selectItemByVoice(transcript) {
             if (!this.sectionsPoints) return;
 
-            const match = this.sectionsPoints.find(point => {
-                const name = point[1].toLowerCase();
-                return name.includes(transcript.toLowerCase());
+            const normalizedTranscript = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+
+            let match = this.sectionsPoints.find(point => {
+                const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+                return name === normalizedTranscript;
             });
+
+            // Tentar aproximação se não houver correspondência exata
+            if (!match) {
+                match = this.sectionsPoints.find(point => {
+                    const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+                    return name.includes(normalizedTranscript) || normalizedTranscript.includes(name);
+                });
+            }
 
             if (match && !this.shoppingListIds.includes(match[0])) {
                 this.shoppingListIds.push(match[0]);
-            // ✅ Fala feedback ao utilizador
-            const mensagem = new SpeechSynthesisUtterance(`Adicionado: ${match[1]}`);
-            mensagem.lang = 'pt-PT';
-            const vozes = window.speechSynthesis.getVoices();
-            const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
-            mensagem.voice = vozPT;
-            window.speechSynthesis.speak(mensagem);
 
+                const mensagem = new SpeechSynthesisUtterance(`Adicionado: ${match[1]}`);
+                mensagem.lang = 'pt-PT';
+                const vozes = window.speechSynthesis.getVoices();
+                const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
+                mensagem.voice = vozPT;
+                window.speechSynthesis.speak(mensagem);
+                console.log("✅ Match encontrado:", match[1]);
             } else {
-            // ✅ Feedback se nada for encontrado
-            const mensagem = new SpeechSynthesisUtterance(`Item não encontrado`);
-            mensagem.lang = 'pt-PT';
-            window.speechSynthesis.speak(mensagem);
-
+                const mensagem = new SpeechSynthesisUtterance(`Item não encontrado`);
+                mensagem.lang = 'pt-PT';
+                window.speechSynthesis.speak(mensagem);
+                console.warn("❌ Nenhum match encontrado para:", normalizedTranscript);
             }
         },
+
 
         
         async postList() {
             try {
-                const response = await axios.post('http://127.0.0.1:5000/list', this.shoppingList)
+                const response = await axios.post('http://192.168.1.241:5000/list', this.shoppingList)
             } catch (error) {
                 console.error(error);
             }
@@ -139,7 +149,7 @@ export default {
 
         async GetSections() {
             try {
-                const response = await axios.get('http://127.0.0.1:5000/sections')
+                const response = await axios.get('http://192.168.1.241:5000/sections')
                 this.sectionsPoints = response.data;
             } catch (error) {
                 console.error(error);
