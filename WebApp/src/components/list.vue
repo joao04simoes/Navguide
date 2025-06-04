@@ -104,38 +104,55 @@ export default {
         selectItemByVoice(transcript) {
             if (!this.sectionsPoints) return;
 
-            const normalizedTranscript = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+            const normalized = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
 
-            let match = this.sectionsPoints.find(point => {
-                const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
-                return name === normalizedTranscript;
+            const isRemoveCommand = normalized.startsWith("remover ") || normalized.startsWith("tirar ");
+            const rawItems = normalized
+                .replace(/^remover |^tirar /, '') // remove o comando do início se for o caso
+                .split(/,| e /) // separa por vírgula ou "e"
+                .map(s => s.trim())
+                .filter(Boolean);
+
+            const results = [];
+
+            rawItems.forEach(item => {
+                const match = this.sectionsPoints.find(point => {
+                    const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+                    return name === item || name.includes(item) || item.includes(name);
+                });
+
+                if (match) {
+                    const alreadySelected = this.shoppingListIds.includes(match[0]);
+
+                    if (isRemoveCommand) {
+                        if (alreadySelected) {
+                            this.shoppingListIds = this.shoppingListIds.filter(id => id !== match[0]);
+                            results.push(`Removido: ${match[1]}`);
+                        }
+                    } else {
+                        if (!alreadySelected) {
+                            this.shoppingListIds.push(match[0]);
+                            
+                        }
+                        results.push(`Adicionado: ${match[1]}`);
+                    }
+                } else {
+                    results.push(`Não encontrado: ${item}`);
+                }
             });
 
-            // Tentar aproximação se não houver correspondência exata
-            if (!match) {
-                match = this.sectionsPoints.find(point => {
-                    const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
-                    return name.includes(normalizedTranscript) || normalizedTranscript.includes(name);
-                });
-            }
+            // Fala os resultados
+            const mensagem = new SpeechSynthesisUtterance(results.join('. '));
+            mensagem.lang = 'pt-PT';
+            const vozes = window.speechSynthesis.getVoices();
+            const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
+            mensagem.voice = vozPT;
+            window.speechSynthesis.speak(mensagem);
 
-            if (match && !this.shoppingListIds.includes(match[0])) {
-                this.shoppingListIds.push(match[0]);
-
-                const mensagem = new SpeechSynthesisUtterance(`Adicionado: ${match[1]}`);
-                mensagem.lang = 'pt-PT';
-                const vozes = window.speechSynthesis.getVoices();
-                const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
-                mensagem.voice = vozPT;
-                window.speechSynthesis.speak(mensagem);
-                console.log("✅ Match encontrado:", match[1]);
-            } else {
-                const mensagem = new SpeechSynthesisUtterance(`Item não encontrado`);
-                mensagem.lang = 'pt-PT';
-                window.speechSynthesis.speak(mensagem);
-                console.warn("❌ Nenhum match encontrado para:", normalizedTranscript);
-            }
+            // Armazenar para debug visual
+            this.voiceResult = results.join('. ');
         },
+
 
 
         
