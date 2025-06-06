@@ -24,7 +24,9 @@ def InitMap():
         ("hji", 1, 9.5), ("ghh", 1.5, 1.5), ("fcv", 0.5,
                                              0.5), ("vbn", 3.5, 6.5), ("vpn", 7.5, 6.5),
         ("das", 5.0, 4.0), ("fds", 7.0, 2.5), ("ctrl",
-                                               6.0, 3.5), ("jyt", 1.0, 5.0), ("ultimo", 8.0, 1.0)
+                                               6.0, 3.5), ("jyt", 1.0, 5.0), ("ultimo", 8.0, 1.0),
+        
+        
     ]
     createDataBase()
     for i in range(len(products)):

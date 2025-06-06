@@ -1,7 +1,12 @@
 <template>
-  <div @touchstart="startTouch" @touchend="endTouch" class="home">
+  <div
+  @click="handleClick"
+  @touchstart.prevent
+  @touchmove.prevent
+></div>
+  <div @click="irParaList" class="home">
     <h1>Bem-vindo à Navguide</h1>
-    <p>Deslize para a esquerda para começar 🚶‍♂️</p>
+    <p>Clique em qualquer parte para começar 🚶‍♂️</p>
   </div>
 </template>
 
@@ -10,25 +15,22 @@ export default {
   name: 'Home',
   data() {
     return {
-      startX: 0,
-      voiceSpoken: false // para garantir que só fala uma vez
+      voiceSpoken: false
     }
   },
   methods: {
-    startTouch(event) {
-      this.startX = event.changedTouches[0].screenX
-
-      // Fala ao primeiro toque
+    irParaList() {
+      // Fala apenas na primeira vez antes de navegar
       if (!this.voiceSpoken) {
         this.falarInicio()
         this.voiceSpoken = true
-      }
-    },
-    endTouch(event) {
-      const endX = event.changedTouches[0].screenX
-      const diffX = this.startX - endX
 
-      if (diffX > 50) {
+        // Aguardar a fala terminar antes de mudar de página (opcional)
+        const delay = 1500 // ajustável
+        setTimeout(() => {
+          this.$router.push('/list')
+        }, delay)
+      } else {
         this.$router.push('/list')
       }
     },
@@ -44,7 +46,7 @@ export default {
     }
   },
   mounted() {
-    // Para garantir que as vozes estão carregadas antes de falar
+    // Garante que a voz é carregada (e fala) no carregamento inicial
     window.speechSynthesis.onvoiceschanged = () => {
       if (!this.voiceSpoken) {
         this.falarInicio()
