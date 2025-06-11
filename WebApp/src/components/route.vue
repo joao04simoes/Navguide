@@ -1,5 +1,5 @@
     <template>
-        <div class="controller">
+        <div class="controller" @mousedown="startLongPress" @mouseup="cancelLongPress">
             <div class="actions">
                 <button @click="GetRoute">🧭 Route</button>
                 <div>
@@ -18,6 +18,8 @@
                 <p>📍 Position: {{ coordX }} : {{ coordY }}</p>
                 <p>🧭 Compass Heading: {{ heading }}°</p>
                 <button @click="getDirections">🧭 Get Directions</button>
+                <button @click="stopSpeaking">🛑 Terminar</button>
+                <button @click="goToList">🛑 Terminar navegação</button>
                 <p v-if="direction">➡️ {{ direction }}</p>
                 <p v-if="stop"> parar</p>
             </div>
@@ -68,11 +70,54 @@ export default {
             shoppingList: [],
             Stops: [],
             stop: false,
+            longPressTimer: null,
+            awaitingConfirmation: false,
+
 
 
         }
     },
     methods: {
+
+        goToList() {
+            this.$router.push('/list');
+        },
+
+        startLongPress() {
+            this.longPressTimer = setTimeout(() => {
+                this.askForAssistance();
+            }, 1000); // 1 segundo de pressão longa
+            },
+
+            cancelLongPress() {
+            clearTimeout(this.longPressTimer);
+            },
+
+            askForAssistance() {
+            this.awaitingConfirmation = true;
+            this.speak("Quer chamar funcionário?");
+
+            // Temporariamente escuta cliques
+            document.addEventListener('click', this.handleSingleClick, { once: true });
+            document.addEventListener('dblclick', this.handleDoubleClick, { once: true });
+            },
+
+            handleSingleClick() {
+            if (this.awaitingConfirmation) {
+                this.awaitingConfirmation = false;
+                this.speak("Pedido cancelado.");
+            }
+            },
+
+            handleDoubleClick() {
+            if (this.awaitingConfirmation) {
+                this.awaitingConfirmation = false;
+                this.speak("Funcionário chamado.");
+                // Aqui você pode adicionar lógica real de chamada, ex: uma requisição ou socket emit
+            }
+            },
+
+
         async GetRoute() {
             try {
                 const coord = [this.coordX, this.coordY];
@@ -111,6 +156,11 @@ export default {
             utterance.lang = 'pt-PT'; // or 'pt-PT' for Portuguese
             speechSynthesis.speak(utterance);
         },
+
+        stopSpeaking() {
+            speechSynthesis.cancel(); // Para qualquer fala ativa
+        },
+
 
 
         MovePerson(direction) {
@@ -253,7 +303,11 @@ export default {
     },
 
     beforeUnmount() {
+        if (this.clickTimeout) {
+            clearTimeout(this.clickTimeout);
+        }
         window.removeEventListener("deviceorientationabsolute", this.handleOrientation);
+        clearInterval(intervalId);
     },
 
 };

@@ -1,13 +1,17 @@
 <template>
   <div
-  @click="handleClick"
-  @touchstart.prevent
-  @touchmove.prevent
-></div>
-  <div @click="goHome">
-    <!-- resto do conteúdo -->
+    @click="handleClick"
+    @touchstart.prevent
+    @touchmove.prevent
+  ></div>
+
+  <!-- Botão explícito para voltar -->
+  <button @click="goHome">Voltar</button>
+
+  <div>
     <button @click.stop="startVoiceRecognition">Selecionar por voz</button>
     <p v-if="voiceResult">Último comando: "{{ voiceResult }}"</p>
+
     <div>
       <button @click.stop="GetSections">Getsections</button>
       <button @click.stop="makeShoppingList">make list</button>
@@ -32,9 +36,7 @@
       </div>
 
       <div v-if="shoppingList">
-        <router-link to="/route">
-          <button>Iniciar a navegação</button>
-        </router-link>
+        <button @click.stop="goToRoute">Iniciar a navegação</button>
         <ul>
           <li v-for="(point, index) in shoppingList" :key="index">
             {{ point[1] }}:{{ point[2] }} : {{ point[3] }}
@@ -44,6 +46,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from 'axios';
@@ -75,6 +78,31 @@ export default {
       this.$router.push('/home');
     },
 
+    goToRoute() {
+      this.$router.push('/route');
+    },
+
+/*
+    awaitNavigationClick() {
+      let clicks = 0;
+      const handler = () => {
+        clicks++;
+        if (clicks === 1) {
+          this.clickTimeout = setTimeout(() => {
+            if (clicks === 1) {
+              // Apenas um clique → ignora ou faz algo leve
+              this.voiceResult = "Clique único ignorado. Use duplo clique para navegar.";
+            } else if (clicks === 2) {
+              // Duplo clique → navega corretamente
+              this.$router.push('/route');
+            }
+            document.removeEventListener('click', handler);
+          }, 300);
+        }
+      };
+      document.addEventListener('click', handler);
+    },
+*/
     startVoiceRecognition() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
@@ -101,79 +129,84 @@ export default {
     },
 
     selectItemByVoice(transcript) {
-  if (!this.sectionsPoints) return;
+      if (!this.sectionsPoints) return;
 
-  const normalized = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+      const normalized = transcript.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
 
-  // ✅ Se o comando for "criar lista", executa o makeShoppingList
-  if (normalized === "criar lista" || normalized === "fazer lista") {
-    if (this.shoppingListIds.length > 0) {
-      this.makeShoppingList();
-      this.voiceResult = "Lista criada com os produtos selecionados.";
-      const confirmacao = new SpeechSynthesisUtterance("Lista criada com os produtos selecionados.");
-      confirmacao.lang = 'pt-PT';
-      const vozes = window.speechSynthesis.getVoices();
-      const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
-      confirmacao.voice = vozPT;
-      window.speechSynthesis.speak(confirmacao);
-    } else {
-      this.voiceResult = "Nenhum produto selecionado para criar a lista.";
-      const aviso = new SpeechSynthesisUtterance("Nenhum produto selecionado para criar a lista.");
-      aviso.lang = 'pt-PT';
-      const vozes = window.speechSynthesis.getVoices();
-      const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
-      aviso.voice = vozPT;
-      window.speechSynthesis.speak(aviso);
-    }
-    return;
-  }
+      // Verifica se o comando é para criar a lista
+      const isCreateListCommand = normalized.includes("criar lista") || normalized.includes("fazer lista");
 
-  // ✅ Processa comandos de adicionar/remover produtos
-  const isRemoveCommand = normalized.startsWith("remover ") || normalized.startsWith("tirar ") || normalized.startsWith("retirar ") || normalized.startsWith("apagar ");
-  const rawItems = normalized.replace(/^remover |^tirar |^retirar |^apagar/, '')
-    .split(/,| e /).map(s => s.trim()).filter(Boolean);
+      if (isCreateListCommand) {
+                if (this.shoppingListIds.length > 0) {
+                this.makeShoppingList();
+                this.voiceResult = "Lista criada com os produtos selecionados. duplo clique para começar navegação. um clique para voltar atras.";
+                const confirmacao = new SpeechSynthesisUtterance(this.voiceResult);
+                confirmacao.lang = 'pt-PT';
+                confirmacao.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+                window.speechSynthesis.speak(confirmacao);
 
-  const results = [];
+                this.awaitNavigationClick();
 
-  rawItems.forEach(item => {
-    const match = this.sectionsPoints.find(point => {
-      const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
-      return name === item || name.includes(item) || item.includes(name);
-    });
 
-    if (match) {
-      const alreadySelected = this.shoppingListIds.includes(match[0]);
+              } else {
+                this.voiceResult = "Nenhum produto selecionado para criar a lista.";
+                const aviso = new SpeechSynthesisUtterance(this.voiceResult);
+                aviso.lang = 'pt-PT';
+                aviso.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+                window.speechSynthesis.speak(aviso);
+              }
+              return;
+            }
 
-      if (isRemoveCommand) {
-        if (alreadySelected) {
-          this.shoppingListIds = this.shoppingListIds.filter(id => id !== match[0]);
-          results.push(`Removido: ${match[1]}`);
+
+      // Processa comandos de adicionar/remover produtos
+      const isRemoveCommand = normalized.startsWith("remover ") || normalized.startsWith("tirar ") || normalized.startsWith("retirar ") || normalized.startsWith("apagar ");
+      const rawItems = normalized
+        .replace(/^remover |^tirar |^retirar |^apagar/, '')
+        .split(/,| e /).map(s => s.trim()).filter(Boolean);
+
+      const results = [];
+
+      rawItems.forEach(item => {
+        const match = this.sectionsPoints.find(point => {
+          const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
+          return name === item || name.includes(item) || item.includes(name);
+        });
+
+        if (match) {
+          const alreadySelected = this.shoppingListIds.includes(match[0]);
+
+          if (isRemoveCommand) {
+            if (alreadySelected) {
+              this.shoppingListIds = this.shoppingListIds.filter(id => id !== match[0]);
+              results.push(`Removido: ${match[1]}`);
+            }
+          } else {
+            if (!alreadySelected) {
+              this.shoppingListIds.push(match[0]);
+            }
+            results.push(`Adicionado: ${match[1]}`);
+          }
+        } else {
+          if (item !== "") results.push(`Não encontrado: ${item}`);
         }
-      } else {
-        if (!alreadySelected) {
-          this.shoppingListIds.push(match[0]);
-        }
-        results.push(`Adicionado: ${match[1]}`);
+      });
+
+      if (results.length > 0) {
+        const mensagem = new SpeechSynthesisUtterance(results.join('. '));
+        mensagem.lang = 'pt-PT';
+        mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+        window.speechSynthesis.speak(mensagem);
+        this.voiceResult = results.join('. ');
       }
-    } else {
-      if (item !== "") results.push(`Não encontrado: ${item}`);
-    }
-  });
+    },
 
-  const mensagem = new SpeechSynthesisUtterance(results.join('. '));
-  mensagem.lang = 'pt-PT';
-  const vozes = window.speechSynthesis.getVoices();
-  const vozPT = vozes.find(v => v.lang === 'pt-PT') || vozes[0];
-  mensagem.voice = vozPT;
-  window.speechSynthesis.speak(mensagem);
-  this.voiceResult = results.join('. ');
- },
 
 
 
     async postList() {
       try {
-        await axios.post('http://194.210.159.157:5000/list', this.shoppingList);
+        await axios.post('http://127.0.0.1:5000/list', this.shoppingList);
       } catch (error) {
         console.error(error);
       }
@@ -181,7 +214,7 @@ export default {
 
     async GetSections() {
       try {
-        const response = await axios.get('http://194.210.159.157:5000/sections');
+        const response = await axios.get('http://127.0.0.1:5000/sections');
         this.sectionsPoints = response.data;
       } catch (error) {
         console.error(error);
@@ -193,11 +226,18 @@ export default {
       this.shoppingList = this.sectionsPoints.filter(point => rawIds.includes(point[0]));
       this.postList();
       this.sectionsPoints = null;
+       // Guarda os IDs no sessionStorage
+      sessionStorage.setItem('savedShoppingListIds', JSON.stringify(this.shoppingListIds));
     }
   },
 
   mounted() {
     this.GetSections();
+
+    const savedIds = sessionStorage.getItem('savedShoppingListIds');
+    if (savedIds) {
+    this.shoppingListIds = JSON.parse(savedIds);
+    }
   }
 }
 </script>
