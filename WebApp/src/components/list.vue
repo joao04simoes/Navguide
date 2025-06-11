@@ -139,13 +139,7 @@ export default {
       if (isCreateListCommand) {
                 if (this.shoppingListIds.length > 0) {
                 this.makeShoppingList();
-                this.voiceResult = "Lista criada com os produtos selecionados. duplo clique para começar navegação. um clique para voltar atras.";
-                const confirmacao = new SpeechSynthesisUtterance(this.voiceResult);
-                confirmacao.lang = 'pt-PT';
-                confirmacao.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
-                window.speechSynthesis.speak(confirmacao);
-
-                this.awaitNavigationClick();
+                this.$router.push('/criar-lista');
 
 
               } else {
@@ -170,8 +164,17 @@ export default {
       rawItems.forEach(item => {
         const match = this.sectionsPoints.find(point => {
           const name = point[1].toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, '').trim();
-          return name === item || name.includes(item) || item.includes(name);
+          const itemBase = item.toLowerCase();
+
+          return (
+            name === itemBase ||
+            name.includes(itemBase) ||
+            itemBase.includes(name) ||
+            name.startsWith(itemBase.slice(0, -1)) ||
+            itemBase.startsWith(name.slice(0, -1))
+          );
         });
+
 
         if (match) {
           const alreadySelected = this.shoppingListIds.includes(match[0]);
