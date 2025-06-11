@@ -1,48 +1,50 @@
 <template>
-  <div>
-    <h1>Deseja iniciar a navegação?</h1>
-    <p>A lista já foi criada com os produtos selecionados.</p>
-
-    <button @click="goToRoute">Sim, iniciar</button>
-    <button @click="goBack">Não, voltar</button>
+  <div
+    @click="handleClick"
+    class="click-area"
+  >
+    <p>Clique uma vez para voltar. Clique duas vezes para iniciar a navegação.</p>
   </div>
 </template>
 
 <script>
 export default {
+  data() {
+    return {
+      clickCount: 0,
+      clickTimeout: null,
+    };
+  },
   methods: {
-    goToRoute() {
-      this.$router.push('/route');
+    handleClick() {
+      this.clickCount++;
+
+      if (this.clickCount === 1) {
+        this.clickTimeout = setTimeout(() => {
+          // Clique único: voltar para a lista
+          this.$router.push('/list');
+          this.clickCount = 0;
+        }, 300);
+      } else if (this.clickCount === 2) {
+        clearTimeout(this.clickTimeout);
+        // Duplo clique: ir para rota de navegação
+        this.$router.push('/route');
+        this.clickCount = 0;
+      }
     },
-    goBack() {
-      this.$router.push('/list');
-    }
-  }
-}
+  },
+};
 </script>
 
 <style scoped>
-div {
+.click-area {
   background: white;
   padding: 2rem;
+  margin: 2rem auto;
   border-radius: 12px;
   max-width: 500px;
-  margin: auto;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   text-align: center;
-}
-
-button {
-  margin: 1rem;
-  background-color: #3498db;
-  color: white;
-  padding: 0.7rem 1.5rem;
-  border: none;
-  border-radius: 6px;
   cursor: pointer;
-}
-
-button:hover {
-  background-color: #2980b9;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 </style>
