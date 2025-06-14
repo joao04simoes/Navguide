@@ -1,9 +1,16 @@
 <template>
+  <!-- Área sensível ao toque -->
   <div
-    @click="handleClick"
-    @touchstart.prevent
-    @touchmove.prevent
-  ></div>
+    class="voice-touch-zone"
+    @touchstart.prevent="startTouchVoice"
+    @touchend.prevent="stopTouchVoice"
+    @mousedown.prevent="startTouchVoice"
+    @mouseup.prevent="stopTouchVoice"
+  >
+    <p v-if="isListening">🎤 A ouvir... Fale agora.</p>
+    <p v-else>Pressione e mantenha para falar</p>
+  </div>
+
 
   <!-- Botão explícito para voltar -->
   <button @click="goHome">Voltar</button>
@@ -62,6 +69,8 @@ export default {
       recognition: null,
       clickCount: 0,
       clickTimeout: null,
+      isListening: false,
+
     }
   },
 
@@ -82,38 +91,26 @@ export default {
       this.$router.push('/route');
     },
 
-/*
-    awaitNavigationClick() {
-      let clicks = 0;
-      const handler = () => {
-        clicks++;
-        if (clicks === 1) {
-          this.clickTimeout = setTimeout(() => {
-            if (clicks === 1) {
-              // Apenas um clique → ignora ou faz algo leve
-              this.voiceResult = "Clique único ignorado. Use duplo clique para navegar.";
-            } else if (clicks === 2) {
-              // Duplo clique → navega corretamente
-              this.$router.push('/route');
-            }
-            document.removeEventListener('click', handler);
-          }, 300);
-        }
-      };
-      document.addEventListener('click', handler);
-    },
-*/
-    startVoiceRecognition() {
+
+    startTouchVoice() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SpeechRecognition) {
-        alert('Reconhecimento de voz não suportado neste navegador.');
+        alert('Reconhecimento de voz não suportado.');
         return;
+      }
+
+      if (this.recognition) {
+        this.recognition.abort(); // limpar sessão anterior se houver
       }
 
       this.recognition = new SpeechRecognition();
       this.recognition.lang = 'pt-PT';
       this.recognition.interimResults = false;
       this.recognition.maxAlternatives = 1;
+
+      this.recognition.onstart = () => {
+        this.isListening = true;
+      };
 
       this.recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript.trim();
@@ -125,8 +122,20 @@ export default {
         console.error('Erro no reconhecimento de voz:', event.error);
       };
 
+      this.recognition.onend = () => {
+        this.isListening = false;
+      };
+
       this.recognition.start();
     },
+
+    stopTouchVoice() {
+      if (this.recognition) {
+        this.recognition.stop();
+      }
+      this.isListening = false;
+    },
+
 
     selectItemByVoice(transcript) {
       if (!this.sectionsPoints) return;
@@ -289,4 +298,20 @@ button {
 button:hover {
   background-color: #2ecc71;
 }
+
+.voice-touch-zone {
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
+  padding: 2rem;
+  border-radius: 12px;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.voice-touch-zone:active {
+  background-color: #e0ffe0;
+}
+
 </style>
