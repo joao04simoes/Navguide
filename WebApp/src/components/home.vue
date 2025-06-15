@@ -1,32 +1,35 @@
 <template>
   <div
-  @click="handleClick"
-  @touchstart.prevent
-  @touchmove.prevent
-></div>
+    @click="handleClick"
+    @touchstart.prevent
+    @touchmove.prevent
+  ></div>
   <div @click="irParaList" class="home">
+    <img :src="logo" alt="Logo" style="width: 150px; margin-bottom: 20px;" />
     <h1>Bem-vindo à Navguide</h1>
     <p>Clique em qualquer parte para começar 🚶‍♂️</p>
   </div>
 </template>
 
+
+
 <script>
+import logo from '@/assets/logo.svg';
+
 export default {
   name: 'Home',
   data() {
     return {
-      voiceSpoken: false
+      voiceSpoken: false,
+      logo
     }
   },
   methods: {
     irParaList() {
-      // Fala apenas na primeira vez antes de navegar
       if (!this.voiceSpoken) {
         this.falarInicio()
         this.voiceSpoken = true
-
-        // Aguardar a fala terminar antes de mudar de página (opcional)
-        const delay = 1500 // ajustável
+        const delay = 1500
         setTimeout(() => {
           this.$router.push('/list')
         }, delay)
@@ -37,16 +40,13 @@ export default {
     falarInicio() {
       const msg = new SpeechSynthesisUtterance('Página inicial')
       msg.lang = 'pt-PT'
-
       const voices = window.speechSynthesis.getVoices()
       const voice = voices.find(v => v.lang === 'pt-PT') || voices[0]
       msg.voice = voice
-
       window.speechSynthesis.speak(msg)
     }
   },
   mounted() {
-    // Garante que a voz é carregada (e fala) no carregamento inicial
     window.speechSynthesis.onvoiceschanged = () => {
       if (!this.voiceSpoken) {
         this.falarInicio()
@@ -56,6 +56,8 @@ export default {
   }
 }
 </script>
+
+
 
 <style scoped>
 .home {
