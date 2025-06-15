@@ -1,5 +1,6 @@
     <template>
         <div class="controller" @mousedown="startLongPress" @mouseup="cancelLongPress">
+            <p class="instruction-text">👉 Clique longo para chamar funcionário</p>
             <div class="actions">
                 <button @click="GetRoute">🧭 Route</button>
                 <div>
@@ -279,6 +280,11 @@ export default {
 
     },
     mounted() {
+        const mensagem = new SpeechSynthesisUtterance("Clique longo para chamar funcionário");
+        mensagem.lang = 'pt-PT';
+        mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+        window.speechSynthesis.speak(mensagem);
+
         // iOS requires user interaction before allowing access
         if (
             typeof DeviceOrientationEvent !== "undefined" &&
