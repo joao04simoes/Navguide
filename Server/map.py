@@ -20,18 +20,14 @@ def InitMap():
         ("padaria", 7.5, 6.5),
         ("talho", 1.0, 5.0),
         ("peixaria", 0.5, 0.5),
-        ("mercearia", 2.5, 7.5),
         ("frutaria", 2.5, 3.5),
         ("charcutaria", 4.5, 5.5),
         ("congelados", 6.5, 5.5),
         ("laticínios", 5.5, 5.5),
         ("bebidas", 2.5, 2.5),
-        ("limpeza", 3.5, 6.5),
         ("higiene", 1.5, 1.5),
         ("doces", 7.0, 2.5),
         ("cereais", 8.0, 1.0),
-        ("especiarias", 1.5, 2.5),
-        ("ovos", 1.0, 9.5),
         ("teste", 1.5, 3.5),
     ]
 
