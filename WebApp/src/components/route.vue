@@ -1,57 +1,48 @@
-    <template>
-        <div class="controller" @mousedown="startLongPress" @mouseup="cancelLongPress">
-            <p class="instruction-text">👉 Clique longo para chamar funcionário</p>
-            <div class="actions">
-                <button @click="GetRoute">🧭 Route</button>
-                <div>
-                    <div class="arrow-up"><button @click="MovePerson(0.5)">⬆Move</button></div>
-                </div>
-                <div class="heading">
-                    <span>Heading:</span>
-                    <button @click="changeHeading(1)">1</button>
-                    <button @click="changeHeading(2)">2</button>
-                    <button @click="changeHeading(3)">3</button>
-                    <button @click="changeHeading(4)">4</button>
-                </div>
-            </div>
+<template>
+  <div 
+    class="touch-area" 
+    @click="handleSingleTap"
+    @dblclick="handleDoubleTap"
+    @mousedown="startLongPress"
+    @mouseup="cancelLongPress"
+    @touchstart="startLongPress"
+    @touchend="cancelLongPress"
+  >
+    <div class="controller">
+      <p class="instruction-text">👉 Clique longo para chamar funcionário. Clique curto para obter direções. Duplo clique para sair.</p>
 
-            <div class="status">
-                <p>📍 Position: {{ coordX }} : {{ coordY }}</p>
-                <p>🧭 Compass Heading: {{ heading }}°</p>
-                <button @click="getDirections">🧭 Get Directions</button>
-                <button @click="stopSpeaking">🛑 Terminar</button>
-                <button @click="goToList">🛑 Terminar navegação</button>
-                <p v-if="direction">➡️ {{ direction }}</p>
-                <p v-if="stop"> parar</p>
-            </div>
+      <div class="status">
+        <p>📍 Position: {{ coordX }} : {{ coordY }}</p>
+        <p>🧭 Compass Heading: {{ heading }}°</p>
+        <p v-if="direction">➡️ {{ direction }}</p>
+        <p v-if="stop">🛑 Parar</p>
+      </div>
 
-            <div class="routes">
-                <div v-if="route?.length && !rRoute">
-                    <h3>📌 Route:</h3>
-                    <ul>
-                        <li v-for="(point, index) in route" :key="index">
-                            <span v-if="isShoppingPoint(point)">🛒</span> {{ point[0] }} : {{ point[1] }}
-                        </li>
-                    </ul>
-                </div>
-                <div v-else-if="rRoute?.length">
-                    <h3>🔄 Re-Route:</h3>
-                    <ul>
-                        <li v-for="(point, index) in rRoute" :key="index">
-                            {{ point[0] }} : {{ point[1] }}
-                        </li>
-                    </ul>
-                </div>
-                <div v-else>
-                    <p>🕐 Awaiting route info...</p>
-                </div>
-
-
-            </div>
+      <div class="routes">
+        <div v-if="route?.length && !rRoute">
+          <h3>📌 Route:</h3>
+          <ul>
+            <li v-for="(point, index) in route" :key="index">
+              <span v-if="isShoppingPoint(point)">🛒</span> {{ point[0] }} : {{ point[1] }}
+            </li>
+          </ul>
         </div>
+        <div v-else-if="rRoute?.length">
+          <h3>🔄 Re-Route:</h3>
+          <ul>
+            <li v-for="(point, index) in rRoute" :key="index">
+              {{ point[0] }} : {{ point[1] }}
+            </li>
+          </ul>
+        </div>
+        <div v-else>
+          <p>🕐 A aguardar informação da rota...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
-
-    </template>
 <script>
 import axios from 'axios';
 
@@ -83,6 +74,26 @@ export default {
         goToList() {
             this.$router.push('/list');
         },
+
+        handleSingleTap() {
+            if (!this.awaitingConfirmation) {
+                this.getDirections();
+            } else {
+                this.awaitingConfirmation = false;
+                this.speak("Pedido cancelado.");
+            }
+        },
+
+        handleDoubleTap() {
+            if (this.awaitingConfirmation) {
+                this.awaitingConfirmation = false;
+                this.speak("Funcionário chamado.");
+                // Aqui pode ir lógica real de chamada, ex: socket.emit ou axios
+            } else {
+                this.goToList();
+            }
+        },
+
 
         startLongPress() {
             this.longPressTimer = setTimeout(() => {
@@ -162,8 +173,8 @@ export default {
             speechSynthesis.cancel(); // Para qualquer fala ativa
         },
 
-
-
+// so para testes
+/*
         MovePerson(direction) {
 
             if (this.heading === 2 || this.heading === 4) {
@@ -200,6 +211,7 @@ export default {
                     });
             }
         },
+*/
 
         IsInRoute() {
             if (this.route) {
@@ -280,7 +292,7 @@ export default {
 
     },
     mounted() {
-        const mensagem = new SpeechSynthesisUtterance("Clique longo para chamar funcionário");
+        const mensagem = new SpeechSynthesisUtterance("Clique longo para chamar funcionário. Clique curto para obter direções. Duplo clique para sair.");
         mensagem.lang = 'pt-PT';
         mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
         window.speechSynthesis.speak(mensagem);
@@ -430,4 +442,14 @@ li {
     border-bottom: 1px solid #eee;
     font-size: 0.95rem;
 }
+
+.touch-area {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    width: 100dvw;
+    z-index: 999;
+}
+
 </style>

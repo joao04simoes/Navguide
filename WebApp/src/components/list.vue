@@ -8,12 +8,17 @@
     @touchend.prevent="handleMouseUp"
   >
     <p v-if="isListening">🎤 A ouvir... Fale agora.</p>
+
     
   </div>
 
   <div v-if="sectionsPoints" class="sections-container">
     <p class="instruction-text">
       Prima no ecrã para dizer onde quer ir. Clique para voltar para trás. Duplo clique para criar lista e começar a navegar.
+    </p>
+
+    <p v-if="voiceResult" class="voice-result">
+      🗣️ Último comando: "{{ voiceResult }}"
     </p>
 
     <ul>
@@ -26,7 +31,7 @@
 
 
   <div v-if="shoppingList" class="shopping-list">
-    <button @click.stop="goToRoute">Iniciar a navegação</button>
+    
     <ul>
       <li v-for="(point, index) in shoppingList" :key="index">
         {{ point[1] }}: {{ point[2] }} : {{ point[3] }}
@@ -62,8 +67,17 @@ export default {
     },
 
     goToRoute() {
+      if (!this.shoppingListIds.length) {
+        const mensagem = new SpeechSynthesisUtterance("A lista ainda está vazia");
+        mensagem.lang = 'pt-PT';
+        mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+        window.speechSynthesis.speak(mensagem);
+        return;
+      }
+
       this.$router.push('/route');
     },
+
 
     handleMouseDown() {
       this.touchStartTime = new Date().getTime();
@@ -202,13 +216,25 @@ export default {
 
     makeShoppingList() {
       const rawIds = [...this.shoppingListIds];
+
+      if (!rawIds.length) {
+        // opcional: feedback de voz
+        const mensagem = new SpeechSynthesisUtterance("A lista está vazia. Selecione itens primeiro.");
+        mensagem.lang = 'pt-PT';
+        mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
+        window.speechSynthesis.speak(mensagem);
+        return;
+      }
+
       this.shoppingList = this.sectionsPoints.filter(point => rawIds.includes(point[0]));
       this.postList();
       sessionStorage.setItem('savedShoppingListIds', JSON.stringify(this.shoppingListIds));
     }
+
   },
 
   mounted() {
+    
     this.GetSections();
     const savedIds = sessionStorage.getItem('savedShoppingListIds');
     if (savedIds) {
@@ -220,7 +246,10 @@ export default {
     mensagem.lang = 'pt-PT';
     mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
     window.speechSynthesis.speak(mensagem);
-  }
+  },
+
+  
+
 
 };
 </script>
@@ -288,6 +317,15 @@ button:hover {
   background-color: #e0ffe0;
   transition: background-color 0.3s;
 }
+
+.voice-result {
+  text-align: center;
+  margin-top: 1rem;
+  font-weight: bold;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
 
 
 
