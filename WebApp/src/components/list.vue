@@ -2,22 +2,21 @@
   <!-- Área sensível ao toque -->
   <div
     class="voice-touch-zone"
-    @touchstart.prevent="startTouchVoice"
-    @touchend.prevent="stopTouchVoice"
-    @mousedown.prevent="startTouchVoice"
-    @mouseup.prevent="stopTouchVoice"
+    @mousedown.prevent="handleMouseDown"
+    @mouseup.prevent="handleMouseUp"
+    @touchstart.prevent="handleMouseDown"
+    @touchend.prevent="handleMouseUp"
   >
+
     <p v-if="isListening">🎤 A ouvir... Fale agora.</p>
-    <p v-else>Pressione e mantenha para falar</p>
+    <p v-else>Pressione e mantenha para falar. </p>
   </div>
 
 
-  <!-- Botão explícito para voltar -->
-  <button @click="goHome">Voltar</button>
+  
 
   <div>
-    <button @click.stop="startVoiceRecognition">Selecionar por voz</button>
-    <p v-if="voiceResult">Último comando: "{{ voiceResult }}"</p>
+    
 
     <div>
       <button @click.stop="GetSections">Getsections</button>
@@ -90,6 +89,41 @@ export default {
     goToRoute() {
       this.$router.push('/route');
     },
+
+
+    handleMouseDown(event) {
+      this.touchStartTime = new Date().getTime();
+      this.touchTimer = setTimeout(() => {
+        this.startTouchVoice(); // clique longo
+        this.touchTimer = null;
+      }, 500); // define "longo" como > 500ms
+    },
+
+    handleMouseUp(event) {
+      const elapsed = new Date().getTime() - this.touchStartTime;
+
+      if (this.touchTimer) {
+        clearTimeout(this.touchTimer); // cancela o clique longo
+        this.touchTimer = null;
+
+        this.clickCount++;
+        if (this.clickTimeout) clearTimeout(this.clickTimeout);
+
+        this.clickTimeout = setTimeout(() => {
+          if (this.clickCount === 1) {
+            this.goHome(); // clique simples
+          } else if (this.clickCount === 2) {
+            this.goToRoute(); // duplo clique
+          }
+          this.clickCount = 0;
+          this.clickTimeout = null;
+        }, 300); // tempo para detectar duplo clique
+      } else {
+        this.stopTouchVoice(); // finaliza o reconhecimento se foi um clique longo
+      }
+    },
+  
+
 
 
     startTouchVoice() {
