@@ -3,7 +3,7 @@
             <div class="actions">
                 <button @click="GetRoute">🧭 Route</button>
                 <div>
-                    <div class="arrow-up"><button @click="MovePerson(0.5)">⬆Move</button></div>
+                    <div class="arrow-up"><button @click="GetPosition()">⬆Move</button></div>
                 </div>
                 <div class="heading">
                     <span>Heading:</span>
@@ -73,6 +73,17 @@ export default {
         }
     },
     methods: {
+
+        async GetPosition() {
+            try {
+                const response = await axios.get('http://127.0.0.1:5000/position');
+                this.coordY = 0;
+                this.coordX = response.data.dataX;
+            } catch (error) {
+
+                console.error(error);
+            }
+        },
         async GetRoute() {
             try {
                 const coord = [this.coordX, this.coordY];

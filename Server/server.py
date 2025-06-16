@@ -23,12 +23,14 @@ shoppingList = []
 
 # Dicionário para guardar as distâncias por mac_address
 distances = {
+    '0x0000': [],
     '0x0001': [],
     '0x0002': []
 }
 
 # Dicionário para guardar as médias por segundo
 current_average = {
+    '0x0000': None,
     '0x0001': None,
     '0x0002': None
 }
@@ -47,7 +49,7 @@ def average_worker():
             for mac in distances:
                 # print("mac")
                 values = distances[mac]
-                print(values)
+
                 if values:
                     media = sum(values) / len(values)
                     current_average[mac] = media
@@ -69,7 +71,16 @@ def index():
     return jsonify(map)
 
 
-@app.route("/receive_distance", methods=['POST'])
+@app.route("/position")
+def getPosition():
+    global current_average
+    escala = 0.1
+    position_data = {
+        'dataX': round(current_average['0x0001'] * escala) if current_average['0x0001'] is not None else 0,
+    }
+    return jsonify(position_data)
+
+
 @app.route("/receive_distance", methods=['POST'])
 def receiveDistance():
     global message_buffer
