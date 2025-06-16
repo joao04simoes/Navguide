@@ -23,12 +23,11 @@ def InitMap():
         ("frutaria", 2.5, 3.5),
         ("charcutaria", 4.5, 5.5),
         ("congelados", 6.5, 5.5),
-        ("laticínios", 5.5, 5.5),
+        ("laticínios", 5.5, 9.5),
         ("bebidas", 2.5, 2.5),
         ("higiene", 1.5, 1.5),
         ("doces", 7.0, 2.5),
-        ("cereais", 8.0, 1.0),
-        ("teste", 1.5, 3.5),
+        ("cereais", 8.0, 1.0)
     ]
 
     createDataBase()

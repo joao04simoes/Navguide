@@ -12,18 +12,26 @@
       <p class="instruction-text">👉 Clique longo para chamar funcionário. Clique curto para obter direções. Duplo clique para sair.</p>
 
       <div class="status">
-        <p>📍 Position: {{ coordX }} : {{ coordY }}</p>
-        <p>🧭 Compass Heading: {{ heading }}°</p>
+        <p>📍 Posição: {{ coordX }} : {{ coordY }}</p>
+        <p>🧭 Orientação: {{ heading }}°</p>
         <p v-if="direction">➡️ {{ direction }}</p>
         <p v-if="stop">🛑 Parar</p>
       </div>
 
       <div class="routes">
         <div v-if="route?.length && !rRoute">
-          <h3>📌 Route:</h3>
+          <h3>📌 Rota:</h3>
           <ul>
             <li v-for="(point, index) in route" :key="index">
-              <span v-if="isShoppingPoint(point)">🛒</span> {{ point[0] }} : {{ point[1] }}
+                <li v-for="(point, index) in route" :key="index">
+                    <template v-if="getShoppingSection(point)">
+                        🛒 {{ point[0] }} : {{ point[1] }} — {{ getShoppingSection(point) }}
+                    </template>
+                    <template v-else>
+                        {{ point[0] }} : {{ point[1] }}
+                    </template>
+                </li>
+
             </li>
           </ul>
         </div>
@@ -71,10 +79,21 @@ export default {
     },
     methods: {
 
-        goToList() {
+        voltarUltimaPagina() {
+            const ultima = localStorage.getItem('ultimaPagina');
+            if (ultima === 'modo-normal') {
+            this.$router.push('/modo-normal');
+            } else {
+            // padrão ou 'list'
             this.$router.push('/list');
+            }
         },
 
+        goBack() {
+            this.voltarUltimaPagina();
+        },
+
+        
         handleSingleTap() {
             if (!this.awaitingConfirmation) {
                 this.getDirections();
@@ -90,44 +109,38 @@ export default {
                 this.speak("Funcionário chamado.");
                 // Aqui pode ir lógica real de chamada, ex: socket.emit ou axios
             } else {
-                this.goToList();
+                this.goBack();
             }
         },
-
 
         startLongPress() {
             this.longPressTimer = setTimeout(() => {
                 this.askForAssistance();
             }, 1000); // 1 segundo de pressão longa
-            },
+        },
 
-            cancelLongPress() {
+        cancelLongPress() {
             clearTimeout(this.longPressTimer);
-            },
+        },
 
-            askForAssistance() {
-            this.awaitingConfirmation = true;
-            this.speak("Quer chamar funcionário?");
+        askForAssistance() {
+            this.$router.push('/funcionario');
+        },
 
-            // Temporariamente escuta cliques
-            document.addEventListener('click', this.handleSingleClick, { once: true });
-            document.addEventListener('dblclick', this.handleDoubleClick, { once: true });
-            },
-
-            handleSingleClick() {
+        handleSingleClick() {
             if (this.awaitingConfirmation) {
                 this.awaitingConfirmation = false;
                 this.speak("Pedido cancelado.");
             }
-            },
+        },
 
-            handleDoubleClick() {
+        handleDoubleClick() {
             if (this.awaitingConfirmation) {
                 this.awaitingConfirmation = false;
                 this.speak("Funcionário chamado.");
                 // Aqui você pode adicionar lógica real de chamada, ex: uma requisição ou socket emit
             }
-            },
+        },
 
 
         async GetRoute() {
@@ -254,8 +267,20 @@ export default {
 
 
         isShoppingPoint(point) {
-            return this.shoppingList.some(item => item[2] === point[0] && item[3] === point[1]);
+            const item = this.shoppingList.find(
+                i => i[2] === point[0] && i[3] === point[1]
+            );
+            return item ? item[1] : null; 
         },
+
+        getShoppingSection(point) {
+            const item = this.shoppingList.find(
+                i => i[2] === point[0] && i[3] === point[1]
+            );
+            return item ? item[1] : null; // item[1] contém o nome da secção
+        },
+
+
 
 
         handleOrientation(event) {
@@ -292,6 +317,8 @@ export default {
 
     },
     mounted() {
+        speechSynthesis.cancel();
+
         const mensagem = new SpeechSynthesisUtterance("Clique longo para chamar funcionário. Clique curto para obter direções. Duplo clique para sair.");
         mensagem.lang = 'pt-PT';
         mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;

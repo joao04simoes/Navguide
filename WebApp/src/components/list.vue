@@ -23,7 +23,7 @@
 
     <ul>
       <li v-for="(point, index) in sectionsPoints" :key="index">
-        {{ point[1] }}: {{ point[2] }} : {{ point[3] }}
+        {{ point[1] }}
         <input type="checkbox" v-model="shoppingListIds" :value="point[0]" />
       </li>
     </ul>
@@ -199,7 +199,7 @@ export default {
 
     async postList() {
       try {
-        await axios.post('http://127.0.0.1:5000/list', this.shoppingList);
+        await axios.post('http://192.168.1.2:5000/list', this.shoppingList);
       } catch (error) {
         console.error(error);
       }
@@ -207,7 +207,7 @@ export default {
 
     async GetSections() {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/sections');
+        const response = await axios.get('http://192.168.1.2:5000/sections');
         this.sectionsPoints = response.data;
       } catch (error) {
         console.error(error);
@@ -234,6 +234,7 @@ export default {
   },
 
   mounted() {
+    speechSynthesis.cancel();
     
     this.GetSections();
     const savedIds = sessionStorage.getItem('savedShoppingListIds');
@@ -246,6 +247,8 @@ export default {
     mensagem.lang = 'pt-PT';
     mensagem.voice = window.speechSynthesis.getVoices().find(v => v.lang === 'pt-PT') || null;
     window.speechSynthesis.speak(mensagem);
+
+    localStorage.setItem('ultimaPagina', 'list');
   },
 
   
@@ -324,6 +327,10 @@ button:hover {
   font-weight: bold;
   color: #2c3e50;
   font-size: 1.1rem;
+}
+
+.instruction-text {
+  font-weight: bold;
 }
 
 
