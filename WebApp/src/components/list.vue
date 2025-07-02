@@ -1,20 +1,16 @@
 <template>
   <!-- Área sensível ao toque -->
-  <div
-    class="voice-touch-zone"
-    @mousedown.prevent="handleMouseDown"
-    @mouseup.prevent="handleMouseUp"
-    @touchstart.prevent="handleMouseDown"
-    @touchend.prevent="handleMouseUp"
-  >
+  <div class="voice-touch-zone" @mousedown.prevent="handleMouseDown" @mouseup.prevent="handleMouseUp"
+    @touchstart.prevent="handleMouseDown" @touchend.prevent="handleMouseUp">
     <p v-if="isListening">🎤 A ouvir... Fale agora.</p>
 
-    
+
   </div>
 
   <div v-if="sectionsPoints" class="sections-container">
     <p class="instruction-text">
-      Prima no ecrã para dizer onde quer ir. Clique para voltar para trás. Duplo clique para criar lista e começar a navegar.
+      Prima no ecrã para dizer onde quer ir. Clique para voltar para trás. Duplo clique para criar lista e começar a
+      navegar.
     </p>
 
     <p v-if="voiceResult" class="voice-result">
@@ -31,7 +27,7 @@
 
 
   <div v-if="shoppingList" class="shopping-list">
-    
+
     <ul>
       <li v-for="(point, index) in shoppingList" :key="index">
         {{ point[1] }}: {{ point[2] }} : {{ point[3] }}
@@ -58,7 +54,7 @@ export default {
   },
 
   computed: {
-    
+
   },
 
   methods: {
@@ -199,7 +195,7 @@ export default {
 
     async postList() {
       try {
-        await axios.post('http://192.168.1.2:5000/list', this.shoppingList);
+        await axios.post('http://192.168.1.64:5000/list', this.shoppingList);
       } catch (error) {
         console.error(error);
       }
@@ -207,7 +203,7 @@ export default {
 
     async GetSections() {
       try {
-        const response = await axios.get('http://192.168.1.2:5000/sections');
+        const response = await axios.get('http://192.168.1.64:5000/sections');
         this.sectionsPoints = response.data;
       } catch (error) {
         console.error(error);
@@ -235,7 +231,7 @@ export default {
 
   mounted() {
     speechSynthesis.cancel();
-    
+
     this.GetSections();
     const savedIds = sessionStorage.getItem('savedShoppingListIds');
     if (savedIds) {
@@ -251,14 +247,15 @@ export default {
     localStorage.setItem('ultimaPagina', 'list');
   },
 
-  
+
 
 
 };
 </script>
 
 <style scoped>
-.sections-container, .shopping-list {
+.sections-container,
+.shopping-list {
   background: white;
   padding: 2rem;
   border-radius: 12px;
@@ -332,8 +329,4 @@ button:hover {
 .instruction-text {
   font-weight: bold;
 }
-
-
-
-
 </style>

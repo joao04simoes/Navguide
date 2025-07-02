@@ -1,14 +1,15 @@
 <template>
-  <div
-    @click="handleClick"
-    @touchstart.prevent
-    @touchmove.prevent
-    class="home"
-  >
-    <img :src="logo" alt="Logo" style="width: 150px; margin-bottom: 20px;" />
-    <h1>Bem-vindo à Navguide</h1>
-    <p class="instruction-text">Clique para começar em modo invisual</p>
-    <p class="instruction-text">Duplo clique para começar em modo normal</p>
+  <div class="home">
+    
+    <h1 class="title">Navguide</h1>
+
+    <button class="btn invisual-btn" @click="iniciarInvisual">
+      Entrar em modo Invisual
+    </button>
+
+    <button class="btn normal-btn" @click="iniciarNormal">
+      Entrar em modo Normal
+    </button>
   </div>
 </template>
 
@@ -20,90 +21,125 @@ export default {
   data() {
     return {
       voiceSpoken: false,
-      logo,
-      clickCount: 0,
-      clickTimeout: null,
     };
   },
   methods: {
-    handleClick() {
-      this.clickCount++;
-
-      if (this.clickTimeout) {
-        clearTimeout(this.clickTimeout);
-      }
-
-      this.clickTimeout = setTimeout(() => {
-        if (this.clickCount === 1) {
-          this.irParaList();
-        } else if (this.clickCount === 2) {
-          this.$router.push('/modo-normal');
-        }
-        this.clickCount = 0;
-      }, 300);
+    iniciarInvisual() {
+      this.$router.push('/list');
     },
 
-    irParaList() {
-      if (!this.voiceSpoken) {
-        this.falarInicio();
-        this.voiceSpoken = true;
-        const delay = 1500;
-        setTimeout(() => {
-          this.$router.push('/list');
-        }, delay);
-      } else {
-        this.$router.push('/list');
-      }
+    iniciarNormal() {
+      this.$router.push('/modo-normal');
     },
 
-    falarInicio() {
-      const msg = new SpeechSynthesisUtterance('Bem vindo à Navgaide. Se for invisual, clique no ecrã para começar. Se não, duplo-clique.');
+    falarInicio(callback) {
+      const msg = new SpeechSynthesisUtterance(
+        'Bem-vindo à Navguide. Toque no botão para modo invisual, ou modo normal.'
+      );
       msg.lang = 'pt-PT';
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(v => v.lang === 'pt-PT') || voices[0];
-      msg.voice = voice;
-      window.speechSynthesis.speak(msg);
+
+      const setVoiceAndSpeak = () => {
+        const voices = speechSynthesis.getVoices();
+        const voice = voices.find(v => v.lang === 'pt-PT') || voices[0];
+        msg.voice = voice;
+        speechSynthesis.speak(msg);
+        if (callback) msg.onend = callback;
+      };
+
+      if (speechSynthesis.getVoices().length === 0) {
+        speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+      } else {
+        setVoiceAndSpeak();
+      }
     },
   },
-  
+
   mounted() {
     speechSynthesis.cancel();
     if (!this.voiceSpoken) {
       this.falarInicio();
       this.voiceSpoken = true;
     }
-    window.speechSynthesis.onvoiceschanged = () => {
-      if (!this.voiceSpoken) {
-        this.falarInicio();
-        this.voiceSpoken = true;
-      }
-    };
   },
 
+  computed: {
+    logo() {
+      return logo;
+    },
+  },
 };
 </script>
 
 <style scoped>
 .home {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #5299d6;
+  background: linear-gradient(135deg, #5299d6, #367bb5);
   color: white;
-  flex-direction: column;
   text-align: center;
-  font-size: 24px;
+  padding: 20px;
+  box-sizing: border-box;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  animation: fadeIn 1s ease-in-out;
 }
 
-.instruction-text {
-  font-size: 18px;
-  margin-top: 8px;
-  font-weight: 500;
-  opacity: 0.85;
+.logo {
+  width: 120px;
+  height: auto;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 32px;
+}
+
+.btn {
+  font-size: 20px;
+  padding: 16px 24px;
+  margin: 12px 0;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  width: 80%;
+  max-width: 300px;
+  transition: background 0.3s ease;
+  font-weight: 600;
+}
+
+.invisual-btn {
+  background-color: #ffffff;
+  color: #367bb5;
+}
+
+.invisual-btn:hover {
+  background-color: #f0f0f0;
+}
+
+.normal-btn {
+  background-color: #367bb5;
+  color: white;
+  border: 2px solid white;
+}
+
+.normal-btn:hover {
+  background-color: #2e6ea1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
+
