@@ -17,15 +17,19 @@ def InitMap():
     }
 
     products = [
-        ("der", 5, 7.5), ("fer", 6.5, 7.5), ("ilo", 2.5,
-                                             5.5), ("wfe", 6.5, 5.5), ("pol", 2.5, 3.5),
-        ("oiu", 5.5, 5.5), ("pkl ", 4.5, 5.5), ("ref",
-                                                2.5, 2.5), ("ter", 1.5, 2.5), ("kji", 2.5, 7.5),
-        ("hji", 1, 9.5), ("ghh", 1.5, 1.5), ("fcv", 0.5,
-                                             0.5), ("vbn", 3.5, 6.5), ("vpn", 7.5, 6.5),
-        ("das", 5.0, 4.0), ("fds", 7.0, 2.5), ("ctrl",
-                                               6.0, 3.5), ("jyt", 1.0, 5.0), ("ultimo", 8.0, 1.0)
+        ("padaria", 7.5, 6.5),
+        ("talho", 1.0, 5.0),
+        ("peixaria", 0.5, 0.5),
+        ("frutaria", 2.5, 3.5),
+        ("charcutaria", 4.5, 5.5),
+        ("congelados", 6.5, 5.5),
+        ("laticínios", 5.5, 9.5),
+        ("bebidas", 2.5, 2.5),
+        ("higiene", 1.5, 1.5),
+        ("doces", 7.0, 2.5),
+        ("cereais", 8.0, 1.0)
     ]
+
     createDataBase()
     for i in range(len(products)):
         addSectionToDataBase(products[i][0],  products[i][1], products[i][2]),

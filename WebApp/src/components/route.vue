@@ -1,57 +1,65 @@
-    <template>
-        <div class="controller">
-            <div class="actions">
-                <button @click="GetRoute">🧭 Route</button>
-                <div>
-                    <div class="arrow-up"><button @click="MovePerson(0.5)">⬆Move</button></div>
-                </div>
-                <div class="heading">
-                    <span>Heading:</span>
-                    <button @click="changeHeading(1)">1</button>
-                    <button @click="changeHeading(2)">2</button>
-                    <button @click="changeHeading(3)">3</button>
-                    <button @click="changeHeading(4)">4</button>
-                </div>
-            </div>
-
-            <div class="status">
-                <p>📍 Position: {{ coordX }} : {{ coordY }}</p>
-                <p>🧭 Compass Heading: {{ heading }}°</p>
-                <button @click="getDirections">🧭 Get Directions</button>
-                <p v-if="direction">➡️ {{ direction }}</p>
-                <p v-if="stop"> parar</p>
-            </div>
-
-            <div class="routes">
-                <div v-if="route?.length && !rRoute">
-                    <h3>📌 Route:</h3>
-                    <ul>
-                        <li v-for="(point, index) in route" :key="index">
-                            <span v-if="isShoppingPoint(point)">🛒</span> {{ point[0] }} : {{ point[1] }}
-                        </li>
-                    </ul>
-                </div>
-                <div v-else-if="rRoute?.length">
-                    <h3>🔄 Re-Route:</h3>
-                    <ul>
-                        <li v-for="(point, index) in rRoute" :key="index">
-                            {{ point[0] }} : {{ point[1] }}
-                        </li>
-                    </ul>
-                </div>
-                <div v-else>
-                    <p>🕐 Awaiting route info...</p>
-                </div>
+<template>
 
 
-            </div>
+    <header class="app-header">
+        <h1>NavGuide</h1>
+    </header>
+    <div class="buttons-wrapper">
+
+        <div class="buttons">
+
+            <button @click="handleDoubleTap" class="btList" aria-label="Voltar ao modo normal"> Editar
+                Lista</button>
+            <button @click="startLongPress" @mouseup="cancelLongPress" class="btEmployee"
+                aria-label="Acessar modo funcionário">Chamar Funcionário</button>
+        </div>
+    </div>
+
+    <div class="controller">
+        <div class="status">
+            <h2>🗺️ Estado da Navegação</h2>
+            <p v-if="direction">➡️ <strong>Direção:</strong> {{ direction }}</p>
+            <p v-if="stop">🛑 <strong>Paragem</strong></p>
         </div>
 
+        <div class="routes">
+            <div v-if="route?.length && !rRoute">
+                <h3>🛒 Próxima Secção:</h3>
+                <p class="next-section">
+                    <template v-if="Stops.length && Stops[0] && getShoppingSection(Stops[0])">
+                        {{ Stops[0][0] }} : {{ Stops[0][1] }} — <strong>{{ getShoppingSection(Stops[0]) }}</strong>
+                    </template>
 
-    </template>
+
+                </p>
+                <h3>✅ Visitadas:</h3>
+                <ul>
+                    <li v-for="(point, index) in visitedSections" :key="index"
+                        v-if="Array.isArray(point) && point.length === 2">
+                        {{ point[0] }} : {{ point[1] }} — {{ getShoppingSection(point) || 'Sem nome' }}
+                    </li>
+                </ul>
+
+            </div>
+
+            <div v-else-if="rRoute">
+                <h3>🛒 Rota Completa:</h3>
+                <ul>
+                    <li v-for="(point, index) in rRoute" :key="index">
+                        {{ point[0] }} : {{ point[1] }} — {{ getShoppingSection(point) || 'Sem nome' }}
+                    </li>
+                </ul>
+            </div>
+            <div v-else>
+                <p>🕐 A aguardar informação da rota...</p>
+            </div>
+        </div>
+    </div>
+
+</template>
+
 <script>
 import axios from 'axios';
-
 import { NextHeading, GiveDirection } from '@/utils/utils';
 let intervalId = null;
 
@@ -59,315 +67,252 @@ export default {
     data() {
         return {
             route: null,
-            coordX: 5,
-            coordY: 9.5,
+            coordX: 0.5,
+            coordY: 9,
             rRoute: null,
-            sectionsPoints: null,
-            heading: 0,
+            heading: 3,
             direction: null,
             shoppingList: [],
             Stops: [],
             stop: false,
-
-
-        }
+            longPressTimer: null,
+            visitedSections: [],
+            indicedarota: -1,
+        };
     },
     methods: {
-        async GetRoute() {
-            try {
-                const coord = [this.coordX, this.coordY];
-                const response = await axios.post('http://127.0.0.1:5000/route', coord)
-                const alldata = response.data;
-                this.route = alldata.route;
-                this.shoppingList = alldata.shoppingList
-                this.Stops = alldata.Stops
-
-            } catch (error) {
-
-                console.error(error);
-            }
+        handleSingleTap() {
+            this.getDirections();
         },
 
+        handleDoubleTap() {
+            this.$router.push('/modo-normal');
+        },
 
-        getDirections() {
-            let NextHeadingValue;
-            let repeat = 0;
-            if (this.rRoute) {
-                NextHeadingValue = NextHeading([this.coordX, this.coordY], this.rRoute[1]);
-            } else {
-                NextHeadingValue = NextHeading([this.coordX, this.coordY], this.route[1]);
-            }
-            [this.direction, repeat] = GiveDirection(this.heading, NextHeadingValue, this.direction);
-            console.log(this.direction, repeat);
-            if (repeat === 1) {
-                this.speak(this.direction);
-            } else {
-                this.speak("Continue");
-            }
+        startLongPress() {
+
+            this.$router.push('/funcionario');
+
+        },
+
+        cancelLongPress() {
+            clearTimeout(this.longPressTimer);
         },
 
         speak(text) {
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'pt-PT'; // or 'pt-PT' for Portuguese
+            utterance.lang = 'pt-PT';
             speechSynthesis.speak(utterance);
         },
 
+        getDirections() {
+            if (!this.route?.length || this.indicedarota >= this.route.length - 1) return;
 
-        MovePerson(direction) {
+            this.indicedarota++;
+            const [x, y] = this.route[this.indicedarota];
+            this.coordX = x;
+            this.coordY = y;
 
-            if (this.heading === 2 || this.heading === 4) {
+            const [rx, ry] = this.Stops[0];
 
-                if (this.coordX === 0 || this.coordX === 10)
-                    return
-                if (this.heading === 2)
-                    this.coordX += direction;
-                if (this.heading === 4)
-                    this.coordX -= direction;
-            } else if (this.heading === 1 || this.heading === 3) {
+            if (x === rx && y === ry) {
+                const reached = this.route[this.indicedarota];
+                this.visitedSections.push(reached);
+                this.Stops.shift(); // remove a secção atual
+                this.stop = true;
+                this.direction = null;
+                this.$nextTick(() => {
+                    this.speak(`Chegou a ${this.getShoppingSection(reached) || 'um ponto da rota'}`);
+                    setTimeout(() => {
+                        this.stop = false;
+                    }, 5000);
+                });
+                // limpa direção ao parar
 
-                if (this.coordY === 0 || this.coordY === 10)
-                    return
-                if (this.heading === 3)
-                    this.coordY -= direction;
-                if (this.heading === 1)
-                    this.coordY += direction;
-            }
-            this.IsInRoute();
-        },
-        changeHeading(x) {
-            this.heading = x;
-        },
-        async GetLineToRoute(x, y, Ns) {
 
-            if (this.route) {
-                await axios.post('http://127.0.0.1:5000/reRoute', { x, y, Ns })
-                    .then(response => {
-                        this.rRoute = response.data
-                    })
-                    .catch(error => {
-                        console.error('Error sending coordinates:', error);
-                    });
+
+            } else {
+                const headingTarget = NextHeading([x, y], this.route[this.indicedarota + 1]);
+                const [dirText] = GiveDirection(this.heading, headingTarget, this.direction);
+                this.direction = dirText; // atualiza texto visível
+                this.speak(this.direction); // fala a mesma direção
+                this.heading = headingTarget;
+                this.stop = false;
             }
         },
 
-        IsInRoute() {
-            if (this.route) {
-                for (let i = 0; i < this.route.length; i++) {
-                    if (this.route[i][0] === this.coordX && this.route[i][1] === this.coordY) {
-
-                        this.route = this.route.slice(i);
-                        this.rRoute = null;
-                        return { success: true, index: i };
-                    } else if (this.rRoute) {
-                        for (let i = 0; i < this.rRoute.length; i++) {
-
-                            if (this.rRoute[i][0] === this.coordX && this.rRoute[i][1] === this.coordY) {
-
-                                this.rRoute.slice(i)
-                                if (this.rRoute.length === 0) {
-                                    this.rRoute = null;
-                                }
-                                return { success: true, index: i };
-                            }
-                        }
-                    }
-
-                }
-                this.GetLineToRoute(this.coordX, this.coordY, this.Stops[0])
-            }
 
 
-        },
-        IstheStop() {
-            if (this.Stops.length === 0) {
-                return false;
-            }
-            if (this.Stops[0][0] === this.coordX && this.Stops[0][1] === this.coordY) {
-                return true;
-            }
 
-            return false;
+        getShoppingSection(point) {
+            const item = this.shoppingList.find(i => i[2] === point[0] && i[3] === point[1]);
+            return item ? item[1] : null;
         },
 
-
-        isShoppingPoint(point) {
-            return this.shoppingList.some(item => item[2] === point[0] && item[3] === point[1]);
-        },
-
-
-        handleOrientation(event) {
-            if (event.absolute || event.webkitCompassHeading !== undefined) {
-                const alpha = event.webkitCompassHeading || event.alpha;
-                this.heading = 360 - alpha; // Reverse to match compass rotation
-                this.heading = Math.round(this.heading);
-                if (this.heading > 315 || this.heading < 45) {
-                    this.heading = 1;
-                } else if (this.heading >= 45 && this.heading < 135) {
-                    this.heading = 2;
-                } else if (this.heading >= 135 && this.heading < 225) {
-                    this.heading = 3;
-                } else if (this.heading >= 225 && this.heading < 315) {
-                    this.heading = 4;
-                }
-
+        async GetRoute() {
+            try {
+                const coord = [this.coordX, this.coordY];
+                const response = await axios.post('http://192.168.1.64:5000/route', coord);
+                const alldata = response.data;
+                this.route = alldata.route;
+                this.shoppingList = alldata.shoppingList;
+                this.Stops = alldata.Stops;
+            } catch (error) {
+                console.error(error);
             }
         },
-
-        MainFunc() {
-            const result = this.IsInRoute()
-            if (result && result.success) {
-                if (this.IstheStop()) {
-                    this.Stops.splice(0, 1);
-                    this.route = this.route.slice(result.index);
-                    this.stop = true
-                }
-                this.getDirections()
-            }
-        }
-
-
-
     },
+
     mounted() {
-        // iOS requires user interaction before allowing access
-        if (
-            typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function"
-        ) {
-            DeviceOrientationEvent.requestPermission()
-                .then((response) => {
-                    if (response === "granted") {
-                        window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
-                    }
-                })
-                .catch(console.error);
-        } else {
-            // For Android or older devices
-            window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
-        }
         this.GetRoute();
         intervalId = setInterval(() => {
-            this.MainFunc()
-        }, 5000)
-
+            this.getDirections();
+        }, 1000);
     },
 
     beforeUnmount() {
-        window.removeEventListener("deviceorientationabsolute", this.handleOrientation);
+        clearInterval(intervalId);
     },
-
 };
 </script>
 
-<style>
-.controller {
-    background: white;
-    padding: 2rem;
-    border-radius: 12px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    max-width: 600px;
-    margin: auto;
-    font-family: 'Segoe UI', sans-serif;
-}
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-.actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    width: 100%;
-}
-
-.movement-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 60px);
-    grid-template-rows: repeat(3, 60px);
-    gap: 0.5rem;
-    justify-content: center;
-    align-items: center;
-}
-
-.arrow-up {
-    grid-column: 2;
-    grid-row: 1;
-}
-
-.arrow-left {
-    grid-column: 1;
-    grid-row: 2;
-}
-
-.arrow-down {
-    grid-column: 2;
-    grid-row: 2;
-}
-
-.arrow-right {
-    grid-column: 3;
-    grid-row: 2;
-}
-
-
-.heading {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    font-size: 1rem;
-}
-
-.heading span {
-    font-weight: bold;
-    margin-right: 0.5rem;
-    color: #333;
-}
-
-button {
-    background-color: #3498db;
-    color: white;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: background-color 0.3s ease;
-}
-
-button:hover {
-    background-color: #2980b9;
-}
-
-.routes,
-.status {
-    background: #f9f9f9;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    width: 100%;
-    margin-top: 1rem;
-    border: 1px solid #ddd;
-    color: #333;
-}
-
-.routes h3,
-.status p {
-    margin: 0.5rem 0;
-    color: #333;
-}
-
-ul {
-    list-style: none;
-    padding: 0;
+* {
+    font-family: 'Poppins', sans-serif;
+    box-sizing: border-box;
     margin: 0;
+    padding: 0;
 }
 
-li {
-    padding: 0.4rem 0;
-    border-bottom: 1px solid #eee;
-    font-size: 0.95rem;
+.buttons-wrapper {
+    padding: 0rem 1rem;
+}
+
+
+.buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    max-width: 420px;
+    padding: 1 0rem;
+    margin-bottom: 1.5 rem;
+}
+
+/* Estilo base dos botões */
+.buttons button {
+    flex: 1 1 auto;
+    padding: 0.75rem 1.2rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #2980b9, #3498db);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Efeitos de hover */
+.buttons button:hover {
+    background: linear-gradient(135deg, #1f5f8b, #2980b9);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* Efeitos ao clicar */
+.buttons button:active {
+    transform: scale(0.98);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+}
+
+
+body {
+    background-color: #ffffff;
+    /* fundo branco */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+}
+
+
+.app-header {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    padding: 1.2rem 2rem;
+    color: #fff;
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.controller {
+    background: #ffffff;
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.status,
+.routes {
+    background: #f9f9f9;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.status h2,
+.routes h3 {
+    margin-bottom: 0.8rem;
+    color: #2c3e50;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.status p,
+.routes li,
+.routes p {
+    font-size: 1rem;
+    color: #333;
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+}
+
+.routes h3 {
+    color: #27ae60;
+}
+
+.next-section {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 1rem;
+}
+
+.routes ul {
+    padding-left: 1rem;
+    list-style: none;
+}
+
+.routes li::before {
+    content: "✅ ";
+    margin-right: 0.3rem;
+    color: #2ecc71;
 }
 </style>
