@@ -11,8 +11,8 @@ def PlotMap():
     sectionsLines = InitMap()
 
     products = getSectionsFromDataBase()
-    entrance = (5, 9.0)
-    route, walkPoints = initRoute(sectionsLines)
+    entrance = (0.5, 9.0)
+    route, walkPoints, stops = initRoute(sectionsLines, products, entrance)
 
     ax.clear()
     for polygon in sectionsLines.values():
