@@ -4,6 +4,7 @@ import ListView from '../components/list.vue'
 import home from '../components/home.vue'
 import funcionario from '../components/funcionario.vue'
 import modoNormal from '../components/modo-normal.vue'
+import buss from '../components/buss.vue'
 
 const routes = [
     { path: '/', component: home },
@@ -12,6 +13,7 @@ const routes = [
     { path: '/home', component: home },
     { path: '/funcionario', component: funcionario },
     { path: '/modo-normal', component: modoNormal },
+    { path: '/buss', component: buss },
 ]
 
 const router = createRouter({
