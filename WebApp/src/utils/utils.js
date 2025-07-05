@@ -1,5 +1,7 @@
 export function NextHeading(atualPosition, NextPosition) {
-    let NextHeading = 0
+    console.log("Atual Position:", atualPosition);
+    console.log("Next Position:", NextPosition);
+    let NextHeading = 5
     if (atualPosition[0] === NextPosition[0] && atualPosition[1] > NextPosition[1])
         NextHeading = 3
     else if (atualPosition[0] === NextPosition[0] && atualPosition[1] < NextPosition[1])
@@ -23,7 +25,7 @@ export function GiveDirection(atualHeading, NextHeading, lastDirection) {
     else if (diff === -1 || diff === 3)
         direction = "virar para a direita"
     else
-        return "error"
+        return ["", 0]
     if (lastDirection === direction)
         return [direction, 0]
     else

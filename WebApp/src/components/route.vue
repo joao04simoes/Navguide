@@ -12,6 +12,7 @@
                 Lista</button>
             <button @click="startLongPress" @mouseup="cancelLongPress" class="btEmployee"
                 aria-label="Acessar modo funcionário">Chamar Funcionário</button>
+
         </div>
     </div>
 
@@ -19,6 +20,10 @@
         <div class="status">
             <h2>🗺️ Estado da Navegação</h2>
             <p v-if="direction">➡️ <strong>Direção:</strong> {{ direction }}</p>
+            <p><strong>Posição:</strong> {{ coordX }}, {{ coordY }} direção {{ heading }}</p>
+
+
+
             <p v-if="stop">🛑 <strong>Paragem</strong></p>
         </div>
 
@@ -34,18 +39,18 @@
                 </p>
                 <h3>✅ Visitadas:</h3>
                 <ul>
-                    <li v-for="(point, index) in visitedSections" :key="index"
-                        v-if="Array.isArray(point) && point.length === 2">
+                    <li v-for="(point, index) in visitedSections" :key="index">
+
                         {{ point[0] }} : {{ point[1] }} — {{ getShoppingSection(point) || 'Sem nome' }}
                     </li>
                 </ul>
 
             </div>
 
-            <div v-else-if="rRoute">
+            <div v-if="route?.length && rRoute">
                 <h3>🛒 Rota Completa:</h3>
                 <ul>
-                    <li v-for="(point, index) in rRoute" :key="index">
+                    <li v-for="(point, index) in route" :key="index">
                         {{ point[0] }} : {{ point[1] }} — {{ getShoppingSection(point) || 'Sem nome' }}
                     </li>
                 </ul>
@@ -62,6 +67,7 @@
 import axios from 'axios';
 import { NextHeading, GiveDirection } from '@/utils/utils';
 let intervalId = null;
+let interState = null;
 
 export default {
     data() {
@@ -70,7 +76,7 @@ export default {
             coordX: 0.5,
             coordY: 9,
             rRoute: null,
-            heading: 3,
+            heading: 1,
             direction: null,
             shoppingList: [],
             Stops: [],
@@ -81,6 +87,28 @@ export default {
         };
     },
     methods: {
+
+        handleOrientation(event) {
+            if (event.absolute || event.webkitCompassHeading !== undefined) {
+                const alpha = event.webkitCompassHeading || event.alpha;
+                this.heading = 360 - alpha; // Reverse to match compass rotation
+
+                // Normalizar dentro de 0-360
+                this.heading = (this.heading + 360) % 360;
+
+                // Determinar direção simplificada
+                if ((this.heading >= 0 && this.heading < 45) || (this.heading > 315 && this.heading <= 360)) {
+                    this.heading = 1; // Norte
+                } else if (this.heading >= 45 && this.heading < 135) {
+                    this.heading = 2; // Este
+                } else if (this.heading >= 135 && this.heading < 225) {
+                    this.heading = 3; // Sul
+                } else if (this.heading >= 225 && this.heading <= 315) {
+                    this.heading = 4; // Oeste
+                }
+            }
+        },
+
         handleSingleTap() {
             this.getDirections();
         },
@@ -106,38 +134,71 @@ export default {
         },
 
         getDirections() {
-            if (!this.route?.length || this.indicedarota >= this.route.length - 1) return;
+            if (this.stop || !this.route?.[1]) return; // Ignora se estiver parado ou se não houver próximo ponto
 
-            this.indicedarota++;
-            const [x, y] = this.route[this.indicedarota];
-            this.coordX = x;
-            this.coordY = y;
+            const headingTarget = NextHeading([this.coordX, this.coordY], this.Stops[0]);
+            console.log('Heading Target:', headingTarget);
+
+            const [dirText] = GiveDirection(this.heading, headingTarget, this.direction);
+            if (dirText && dirText !== this.direction) {
+                this.direction = dirText; // atualiza texto visível
+                this.speak(this.direction); // fala nova direção
+            }
+
+            this.stop = false;
+        },
+        seestate() {
+            if (!this.route?.length || this.stop) return;
+
+            this.getPosition();
+
+            // Atualiza a rota se já passou por novos pontos
+            const currentIndex = this.route.findIndex(
+                ([x, y]) => x === this.coordX && y === this.coordY
+            );
+
+            if (currentIndex !== -1 && currentIndex > this.indicedarota) {
+                this.indicedarota = currentIndex;
+                this.route = this.route.slice(currentIndex);
+                console.log('Rota atualizada a partir do ponto encontrado:', this.coordX, this.coordY);
+            }
+
+            if (!this.Stops.length || !this.route[0]) return;
 
             const [rx, ry] = this.Stops[0];
 
-            if (x === rx && y === ry) {
-                const reached = this.route[this.indicedarota];
+            // Usa comparação com tolerância para evitar erros de precisão
+            const coordsAreClose = (x1, y1, x2, y2, margin = 0.1) =>
+                Math.abs(x1 - x2) <= margin && Math.abs(y1 - y2) <= margin;
+
+            if (coordsAreClose(this.coordX, this.coordY, rx, ry)) {
+                const reached = this.Stops[0];
                 this.visitedSections.push(reached);
-                this.Stops.shift(); // remove a secção atual
+                this.Stops.shift();
                 this.stop = true;
                 this.direction = null;
+
+                // Fala chegada e aguarda 5s antes de continuar
                 this.$nextTick(() => {
                     this.speak(`Chegou a ${this.getShoppingSection(reached) || 'um ponto da rota'}`);
                     setTimeout(() => {
                         this.stop = false;
-                    }, 5000);
+                    }, 3000);
                 });
-                // limpa direção ao parar
 
+                // Verifica se foi a última stop
+                if (this.Stops.length === 0) {
+                    setTimeout(() => {
+                        this.speak('Rota completa! Obrigado por usar o NavGuide!');
+                        clearInterval(intervalId);
+                        clearInterval(interState);
 
-
-            } else {
-                const headingTarget = NextHeading([x, y], this.route[this.indicedarota + 1]);
-                const [dirText] = GiveDirection(this.heading, headingTarget, this.direction);
-                this.direction = dirText; // atualiza texto visível
-                this.speak(this.direction); // fala a mesma direção
-                this.heading = headingTarget;
-                this.stop = false;
+                        // Aguarda mais 5s para deixar terminar a fala
+                        setTimeout(() => {
+                            this.$router.push('/modo-normal');
+                        }, 5000);
+                    }, 2000); // espera 6 segundos após chegada
+                }
             }
         },
 
@@ -149,8 +210,22 @@ export default {
             return item ? item[1] : null;
         },
 
+        async getPosition() {
+            try {
+                const response = await axios.get('http://192.168.1.64:5000/position');
+                const position = response.data;
+                this.coordX = position.dataX;
+                this.coordY = position.dataY;
+            } catch (error) {
+                console.error('Erro ao obter posição:', error);
+            }
+        },
+
         async GetRoute() {
             try {
+                this.getPosition();
+                // Aguarda 1 segundo para garantir que a posição foi atualizada
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 const coord = [this.coordX, this.coordY];
                 const response = await axios.post('http://192.168.1.64:5000/route', coord);
                 const alldata = response.data;
@@ -164,14 +239,38 @@ export default {
     },
 
     mounted() {
+        // iOS requires user interaction before allowing access
+        if (
+            typeof DeviceOrientationEvent !== "undefined" &&
+            typeof DeviceOrientationEvent.requestPermission === "function"
+        ) {
+            DeviceOrientationEvent.requestPermission()
+                .then((response) => {
+                    if (response === "granted") {
+                        window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
+                    }
+                })
+                .catch(console.error);
+        } else {
+            // For Android or older devices
+            window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
+        }
+
         this.GetRoute();
         intervalId = setInterval(() => {
             this.getDirections();
-        }, 1000);
+        }, 3000);
+        interState = setInterval(() => {
+            this.seestate();
+        }, 500);
+
     },
+
+
 
     beforeUnmount() {
         clearInterval(intervalId);
+        window.removeEventListener("deviceorientationabsolute", this.handleOrientation);
     },
 };
 </script>
