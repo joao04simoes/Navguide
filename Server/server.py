@@ -74,7 +74,7 @@ def index():
 @app.route("/position")
 def getPosition():
     global current_average
-    escala = 0.1
+    escala = 0.03
     position_data = {
         'dataX': round(current_average['0x0001'] * escala) if current_average['0x0001'] is not None else 0,
         'dataY': 0,
