@@ -120,32 +120,12 @@ export default {
 
         },
 
-        handleOrientation(event) {
-            if (event.absolute || event.webkitCompassHeading !== undefined) {
-                const alpha = event.webkitCompassHeading || event.alpha;
-                this.heading = 360 - alpha; // Reverse to match compass rotation
-            }
-        },
+
 
 
     },
     mounted() {
-        // iOS requires user interaction before allowing access
-        if (
-            typeof DeviceOrientationEvent !== "undefined" &&
-            typeof DeviceOrientationEvent.requestPermission === "function"
-        ) {
-            DeviceOrientationEvent.requestPermission()
-                .then((response) => {
-                    if (response === "granted") {
-                        window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
-                    }
-                })
-                .catch(console.error);
-        } else {
-            // For Android or older devices
-            window.addEventListener("deviceorientationabsolute", this.handleOrientation, true);
-        }
+
     },
 
     beforeUnmount() {
