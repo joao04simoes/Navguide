@@ -7,6 +7,7 @@ import re
 import time
 import threading
 from threading import Lock
+from local import trilateracao_2d
 
 distances_lock = Lock()
 
@@ -74,10 +75,15 @@ def index():
 @app.route("/position")
 def getPosition():
     global current_average
-    escala = 0.03
+    escala = 0.08
+    sol1 = trilateracao_2d([27, 50], round(
+        current_average['0x0001'] * escala), [20, 50], round(current_average['0x0002'] * escala))
+
+    print(sol1)
+
     position_data = {
-        'dataX': round(current_average['0x0001'] * escala) if current_average['0x0001'] is not None else 0,
-        'dataY': 0,
+        'dataX':  round(sol1[0])if current_average['0x0001'] is not None else 0,
+        'dataY':  round(sol1[1]) if current_average['0x0002'] is not None else 0,
     }
     return jsonify(position_data)
 

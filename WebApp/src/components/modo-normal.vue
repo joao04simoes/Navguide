@@ -58,7 +58,7 @@ export default {
 
     async GetSections() {
       try {
-        const response = await axios.get('http://192.168.1.64:5000/sections');
+        const response = await axios.get('http://192.168.13.137:5000/sections');
         this.sectionsPoints = response.data;
       } catch (error) {
         console.error('Erro ao carregar seções:', error);
@@ -67,7 +67,7 @@ export default {
 
     async postList() {
       try {
-        await axios.post('http://192.168.1.64:5000/list', this.shoppingList);
+        await axios.post('http://192.168.13.137:5000/list', this.shoppingList);
       } catch (error) {
         console.error('Erro ao enviar lista:', error);
       }

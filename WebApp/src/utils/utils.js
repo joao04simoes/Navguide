@@ -1,10 +1,10 @@
 export function NextHeading(atualPosition, NextPosition) {
     console.log("Atual Position:", atualPosition);
     console.log("Next Position:", NextPosition);
-    let NextHeading = 5
-    if (atualPosition[0] === NextPosition[0] && atualPosition[1] > NextPosition[1])
+    let NextHeading = 3
+    if (atualPosition[0] === NextPosition[0] || atualPosition[1] < NextPosition[1])
         NextHeading = 3
-    else if (atualPosition[0] === NextPosition[0] && atualPosition[1] < NextPosition[1])
+    else if (atualPosition[0] === NextPosition[0] && atualPosition[1] > NextPosition[1])
         NextHeading = 1
     else if (atualPosition[0] > NextPosition[0] && atualPosition[1] === NextPosition[1])
         NextHeading = 4

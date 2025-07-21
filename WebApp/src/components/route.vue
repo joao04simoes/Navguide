@@ -55,9 +55,7 @@
                     </li>
                 </ul>
             </div>
-            <div v-else>
-                <p>🕐 A aguardar informação da rota...</p>
-            </div>
+
         </div>
     </div>
 
@@ -97,13 +95,14 @@ export default {
                 this.heading = (this.heading + 360) % 360;
 
                 // Determinar direção simplificada
-                if ((this.heading >= 0 && this.heading < 45) || (this.heading > 315 && this.heading <= 360)) {
+                if ((this.heading >= 270 && this.heading < 369)) {
                     this.heading = 1; // Norte
-                } else if (this.heading >= 45 && this.heading < 135) {
+                } else if (this.heading >= 0 && this.heading < 90) {
                     this.heading = 2; // Este
-                } else if (this.heading >= 135 && this.heading < 225) {
+                } else if (this.heading >= 90 && this.heading < 180
+                ) {
                     this.heading = 3; // Sul
-                } else if (this.heading >= 225 && this.heading <= 315) {
+                } else if (this.heading >= 180 && this.heading <= 270) {
                     this.heading = 4; // Oeste
                 }
             }
@@ -134,19 +133,54 @@ export default {
         },
 
         getDirections() {
-            if (this.stop || !this.route?.[1]) return; // Ignora se estiver parado ou se não houver próximo ponto
+            const coordsAreClose = (x1, x2, margin = 5) =>
+                Math.abs(x1 - x2) <= margin;
 
-            const headingTarget = NextHeading([this.coordX, this.coordY], this.Stops[0]);
-            console.log('Heading Target:', headingTarget);
 
-            const [dirText] = GiveDirection(this.heading, headingTarget, this.direction);
-            if (dirText && dirText !== this.direction) {
-                this.direction = dirText; // atualiza texto visível
-                this.speak(this.direction); // fala nova direção
+            const targetX = this.Stops[0][0];
+            const targetY = this.Stops[0][1];
+
+            let headingTarget;
+
+            // Verifica se está perto na direção X (horizontal)
+            if (coordsAreClose(this.coordX, targetX)) {
+                if (this.coordY < targetY) {
+                    headingTarget = 3; // frente
+                    this.speak("seguir em frente");
+                } else if (this.coordY > targetY) {
+                    headingTarget = 1; // trás
+                    this.speak("seguir para trás");
+                }
             }
+            // Verifica se está perto na direção Y (vertical)
+            else if (coordsAreClose(this.coordY, targetY)) {
+                if (this.coordX < targetX) {
+                    headingTarget = 2; // direita
+                    this.speak("virar à direita");
+                } else if (this.coordX > targetX) {
+                    headingTarget = 4; // esquerda
+                    this.speak("virar à esquerda");
+                }
+            } else {
+                // Se não está perto, calcula direção para próxima paragem
+                const nextStop = this.Stops?.[0];
+                if (!nextStop) return;
+
+                const [nextX, nextY] = nextStop;
+                headingTarget = NextHeading([this.coordX, this.coordY], [nextX, nextY]);
+                const [dirText] = GiveDirection(this.heading, headingTarget, this.direction);
+
+                if (dirText && dirText !== this.direction) {
+                    this.direction = dirText;
+                    this.speak(this.direction);
+                }
+            }
+
+
 
             this.stop = false;
         },
+
         seestate() {
             if (!this.route?.length || this.stop) return;
 
@@ -168,7 +202,7 @@ export default {
             const [rx, ry] = this.Stops[0];
 
             // Usa comparação com tolerância para evitar erros de precisão
-            const coordsAreClose = (x1, y1, x2, y2, margin = 0.1) =>
+            const coordsAreClose = (x1, y1, x2, y2, margin = 2) =>
                 Math.abs(x1 - x2) <= margin && Math.abs(y1 - y2) <= margin;
 
             if (coordsAreClose(this.coordX, this.coordY, rx, ry)) {
@@ -212,7 +246,7 @@ export default {
 
         async getPosition() {
             try {
-                const response = await axios.get('http://192.168.1.64:5000/position');
+                const response = await axios.get('http://192.168.13.137:5000/position');
                 const position = response.data;
                 this.coordX = position.dataX;
                 this.coordY = position.dataY;
@@ -227,7 +261,7 @@ export default {
                 // Aguarda 1 segundo para garantir que a posição foi atualizada
                 await new Promise(resolve => setTimeout(resolve, 1000));
                 const coord = [this.coordX, this.coordY];
-                const response = await axios.post('http://192.168.1.64:5000/route', coord);
+                const response = await axios.post('http://192.168.13.137:5000/route', coord);
                 const alldata = response.data;
                 this.route = alldata.route;
                 this.shoppingList = alldata.shoppingList;

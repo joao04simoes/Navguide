@@ -9,17 +9,13 @@ from dataBase import addSectionToDataBase, getSectionsFromDataBase, createDataBa
 
 def InitMap():
     sectionsLines = {
-        "Entrance": Polygon([(-0.5, 8.0), (1, 8.0), (1, 8.5), (-0.5, 8.5)]),
-        "Produce": Polygon([(2, 8.1), (4, 8.1), (4, 7.9), (2, 7.9)]),
-        "Dairy": Polygon([(6, 8.1), (8, 8.1), (8, 7.9), (6, 7.9)]),
-        "Bakery": Polygon([(2, 6.1), (4, 6.1), (4, 5.9), (2, 5.9)]),
-        "Frozen Foods": Polygon([(6, 6.1), (8, 6.1), (8, 5.9), (6, 5.9)]),
-        "Snacks": Polygon([(2, 4.1), (4, 4.1), (4, 3.9), (2, 3.9)]),
+
     }
 
     products = [
-        ("padaria", 8.0, 0),
-        ("bananas", 5.0, 0),
+        ("feijao", 30, 41),
+        ("cafe", 21, 46),
+        ("saida", 2, 45)
 
     ]
 
@@ -50,6 +46,7 @@ def initRoute(sectionsLines, shoppingList, coord):
         route = [start]
         print("route:", route)
         remaining_stops = product_locations[:]
+
         stops = []
 
         while remaining_stops:
@@ -62,7 +59,7 @@ def initRoute(sectionsLines, shoppingList, coord):
             remaining_stops.remove(next_stop)
 
         # route += a_star(route[-1], destination, walkable_points, grid_size)[1:]
-        print("Final Route:", route)
+        # stops.append(destination)
 
         return route, stops
 
@@ -76,7 +73,7 @@ def initRoute(sectionsLines, shoppingList, coord):
                 for y in range(int(10 / grid_size)) if can_walk(x * grid_size, y * grid_size)}
 
     walkable_points = generate_grid()
-    destination = (10, 0)
+    destination = (0, 45)
 
     route, stops = find_full_route(entrance, products, destination,
                                    walkable_points, grid_size)
